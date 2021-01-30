@@ -46,6 +46,11 @@ struct CPU {
 		static constexpr BYTE ins_lda_im = 0xA9;	// immediate LDA instruction (2 cycles, 2 bytes. Affects zero and negative flags)
 		static constexpr BYTE ins_lda_zp = 0xA5;	// zero-page LDA instruction (3 cycles, 2 bytes. Affects zero and negative flags)
 		static constexpr BYTE ins_lda_zpx = 0xB5;	// zero-page X LDA instruction (4 cycles, 2 bytes. Affects zero and negative flags)
+		static constexpr BYTE ins_lda_abs = 0xAD; 	// absolute LDA instruction (4 cycles, 3 bytes. Affects zero and negative flags)
+		static constexpr BYTE ins_lda_absx = 0xBD; 	// absolute X LDA instruction (4-5 cycles, 3 bytes. Affects zero and negative flags)
+		static constexpr BYTE ins_lda_absy = 0xB9; 	// absolute Y LDA instruction (4-5 cycles, 3 bytes. Affects zero and negative flags)
+		static constexpr BYTE ins_lda_indx = 0xA1; 	// indirect X LDA instruction (6 cycles, 2 bytes. Affects zero and negative flags)
+		static constexpr BYTE ins_lda_indy = 0xB1;	// indirect Y LDA instruction (5-6 cycles, 2 bytes. Affects zero and negative flags)
 
 		// sends a reset signal to reset computer state (7 cycles)
 		void reset(uint32_t &cycles, MEMORY &mem) {
@@ -60,10 +65,10 @@ struct CPU {
 			rwStack(mem, READ);
 			rwStack(mem, READ);
 			// stores contents of 0xFFFD in the low byte of the program counter register and decrements stack pointer
-			reg_programCounter = rwPage(mem, reg_stackPointer, 0xFF, READ, 0x00);
+			reg_programCounter = rwPage(mem, reg_stackPointer, 0xFF, READ);
 			reg_stackPointer--;
 			// stores contents of 0xFFFC in the high byte of the program counter register and decrements stack pointer
-			reg_programCounter += (WORD)(rwPage(mem, reg_stackPointer, 0xFF, READ, 0x00)) >> 8;
+			reg_programCounter += (WORD)(rwPage(mem, reg_stackPointer, 0xFF, READ)) >> 8;
 			reg_stackPointer--;
 		}
 
@@ -92,6 +97,12 @@ struct CPU {
 							fl_zero = (reg_acc == 0);
 							fl_neg = (reg_acc & 0b01000000) > 0;
 						}
+					case ins_lda_abs:
+						{
+							reg_acc = rwPage(mem, fetchNext(cycles, mem), fetchNext(cycles, mem), READ, 0x00);
+							fl_zero = (reg_acc == 0);
+							fl_neg = (reg_acc & 0b01000000) > 0;
+						}
 				}
 			}
 		}
@@ -110,7 +121,7 @@ struct CPU {
 		BYTE fl_neg:1;				// 1-bit negative flag
 
 		// reads/writes and returns byte at address in given page (1 cycle)
-		BYTE rwPage(MEMORY &mem, BYTE address, BYTE page, bool rw, BYTE data) {
+		BYTE rwPage(MEMORY &mem, BYTE address, BYTE page, bool rw, BYTE data = 0x00) {
 			BYTE value;
 			if (rw == READ) {
 				value = mem[address | ((WORD)(page) >> 8)];
