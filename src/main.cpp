@@ -64,9 +64,8 @@ struct CPU {
 			pushStack(mem, 0x00);
 			pushStack(mem, 0x00);
 			pushStack(mem, 0x00);
-			// stores contents at 0xFFFC and 0xFFFD (low-endian) in program counter (contains location of reset routine)
-			reg_programCounter = rw(mem, 0xFFFC, READ);
-			reg_programCounter |= (WORD)(rw(mem, 0xFFFD, READ)) >> 8;
+			// stores contents at 0xFFFC and 0xFFFD (little-endian) in program counter (contains location of reset routine)
+			reg_programCounter = littleEndianWord(rw(mem, 0xFFFC, READ), rw(mem, 0xFFFD, READ));
 		}
 
 		// executes instructions at programCounter while cycles is greater than 0
@@ -90,16 +89,22 @@ struct CPU {
 						break;
 					case ins_lda_zpx:
 						{
-							reg_acc = rw(mem, fetch(mem), READ) + reg_x;
+							reg_acc = rw(mem, fetch(mem) + reg_x, READ);
 							cycles--;
 							fl_zero = (reg_acc == 0);
 							fl_neg = (reg_acc & 0b01000000) > 0;
 						}
+						break;
 					case ins_lda_abs:
 						{
-							reg_acc = rw(mem, fetch(mem), fetch(mem), READ);
+							reg_acc = rw(mem, littleEndianWord(fetch(mem), fetch(mem)), READ);
 							fl_zero = (reg_acc == 0);
 							fl_neg = (reg_acc & 0b01000000) > 0;
+						}
+						break;
+					case ins_lda_absx:
+						{
+							rw(mem, absoluteXAddressing(mem, littleEndianWord(fetch(mem), fetch(mem))), READ);
 						}
 				}
 			}
@@ -150,6 +155,48 @@ struct CPU {
 			BYTE value = mem[reg_stackPointer | 0x0100];
 			reg_stackPointer--;
 			return value;
+		}
+
+		// returns effective address of absolute X addressing mode (1 cycle in case of page cross, 0 otherwise)
+		WORD absoluteXAddressing(MEMORY &mem, WORD address) {
+			address += reg_x;
+			if (address & 0x00ff < reg_x) {
+				// extra cycle when page boundary is crossed
+				mem[address];
+			}
+			return address;
+		}
+
+		// returns effective address of absolute Y addressing mode (1 cycle in case of page cross, 0 otherwise)
+		WORD absoluteYAddressing(MEMORY &mem, WORD address) {
+			address += reg_y;
+			if (address & 0x00ff < reg_y) {
+				// extra cycle when page boundary is crossed
+				mem[address];
+			}
+			return address;
+		}
+
+		// returns effective address of indirect X (indexed indirect) addressing more ( cycles)
+		WORD indirectXAddressing(MEMORY &mem, WORD address) {
+			address += reg_x;
+			return littleEndianWord(rw(mem, address, READ), rw(mem, address++, READ));
+		}
+
+		// returns effective address of indirect Y (indirect indexed) addressing more (cycles in case of page cross,  otherwise)
+		WORD indirectYAddressing(MEMORY &mem, WORD address) {
+			WORD effectiveAddress = littleEndianWord(rw(mem, address, READ), rw(mem, address++, READ));
+			effectiveAddress += reg_y;
+			if (effectiveAddress < reg_y) {
+				// extra cycle when page boundary is crossed
+				mem[effectiveAddress];
+			}
+			return effectiveAddress;
+		}
+
+		// returns a low endian word formed from two bytes
+		WORD littleEndianWord(BYTE lowByte, BYTE highByte) {
+			return lowByte | (WORD)(highByte) >> 8;
 		}
 };
 
