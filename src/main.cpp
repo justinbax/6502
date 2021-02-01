@@ -61,45 +61,43 @@ struct CPU {
 			fl_carry = fl_zero = fl_interr = fl_dec = fl_break = fl_oflow = fl_neg = false;
 			reg_acc = reg_x = reg_y = 0;
 			// sets stack pointer register to 0xFD
-			rwStack(mem, READ);
-			rwStack(mem, READ);
-			rwStack(mem, READ);
-			// stores contents of 0xFFFD in the low byte of the program counter register and decrements stack pointer
-			reg_programCounter = rwPage(mem, reg_stackPointer, 0xFF, READ);
-			reg_stackPointer--;
-			// stores contents of 0xFFFC in the high byte of the program counter register and decrements stack pointer
-			reg_programCounter += (WORD)(rwPage(mem, reg_stackPointer, 0xFF, READ)) >> 8;
-			reg_stackPointer--;
+			pushStack(mem, 0x00);
+			pushStack(mem, 0x00);
+			pushStack(mem, 0x00);
+			// stores contents at 0xFFFC and 0xFFFD (low-endian) in program counter (contains location of reset routine)
+			reg_programCounter = rw(mem, 0xFFFC, READ);
+			reg_programCounter |= (WORD)(rw(mem, 0xFFFD, READ)) >> 8;
 		}
 
 		// executes instructions at programCounter while cycles is greater than 0
-		void execute(uint32_t cycles, MEMORY &mem) {
+		void execute(uint32_t &cycles, MEMORY &mem) {
 			while (cycles > 0) {
-				BYTE instruction = fetchNext(cycles, mem);
+				BYTE instruction = fetch(mem);
 				switch (instruction) {
 					case ins_lda_im:
 						{
-							reg_acc = fetchNext(cycles, mem);
+							reg_acc = fetch(mem);
 							fl_zero = (reg_acc == 0);
 							fl_neg = (reg_acc & 0b01000000) > 0;
 						}
 						break;
 					case ins_lda_zp:
 						{
-							reg_acc = rwZeroPage(mem, fetchNext(cycles, mem), READ);
+							reg_acc = rw(mem, fetch(mem), READ);
 							fl_zero = (reg_acc == 0);
 							fl_neg = (reg_acc & 0b01000000) > 0;
 						}
 						break;
 					case ins_lda_zpx:
 						{
-							reg_acc = rwZeroPage(mem, fetchNext(cycles, mem), READ) + reg_x;
+							reg_acc = rw(mem, fetch(mem), READ) + reg_x;
+							cycles--;
 							fl_zero = (reg_acc == 0);
 							fl_neg = (reg_acc & 0b01000000) > 0;
 						}
 					case ins_lda_abs:
 						{
-							reg_acc = rwPage(mem, fetchNext(cycles, mem), fetchNext(cycles, mem), READ, 0x00);
+							reg_acc = rw(mem, fetch(mem), fetch(mem), READ);
 							fl_zero = (reg_acc == 0);
 							fl_neg = (reg_acc & 0b01000000) > 0;
 						}
@@ -112,6 +110,7 @@ struct CPU {
 		BYTE reg_acc;				// 8-bit accumulator register
 		BYTE reg_x;					// 8-bit x register
 		BYTE reg_y;					// 8-bit y register
+
 		BYTE fl_carry:1;			// 1-bit carry flag
 		BYTE fl_zero:1;				// 1-bit carry flag
 		BYTE fl_interr:1;			// 1-bit zero flag
@@ -120,34 +119,35 @@ struct CPU {
 		BYTE fl_oflow:1;			// 1-bit overflow flag
 		BYTE fl_neg:1;				// 1-bit negative flag
 
-		// reads/writes and returns byte at address in given page (1 cycle)
-		BYTE rwPage(MEMORY &mem, BYTE address, BYTE page, bool rw, BYTE data = 0x00) {
+		// reads and returns next byte at programCounter. Increments programCounter (1 cycle)
+		BYTE fetch(MEMORY &mem) {
+			BYTE data = mem[reg_programCounter];
+			reg_programCounter++;
+			return data;
+		}
+
+		// reads/writes and returns byte at absolute address (from 0x0000 to 0xFFFF) (1 cycle)
+		BYTE rw(MEMORY &mem, WORD address, bool rw, BYTE data = 0x00) {
 			BYTE value;
 			if (rw == READ) {
-				value = mem[address | ((WORD)(page) >> 8)];
+				value = mem[address];
 			} else {
-				mem[address | ((WORD)(page) >> 8)] = data;
+				mem[address] = data;
 				value = data;
 			}
 			return value;
 		}
 
-		// reads and returns next byte at programCounter. Increments programCounter (1 cycle)
-		BYTE fetchNext(uint32_t &cycles, MEMORY &mem) {
-			BYTE data = mem[reg_programCounter];
-			reg_programCounter++;
-			cycles--;
-			return data;
+		// pushes value to stack (address reg_stackPointer | 0x0100) and increments stack pointer (1 cycle)
+		BYTE pushStack(MEMORY &mem, BYTE value) {
+			mem[reg_stackPointer | 0x0100] = value;
+			reg_stackPointer++;
+			return value;
 		}
 
-		// reads/writes and returns byte at address in zero-page (range 0x0000 to 0x00FF) (1 cycle)
-		BYTE rwZeroPage(MEMORY &mem, BYTE address, bool rw, BYTE data = 0x00) {
-			return rwPage(mem, address, 0x00, rw, data);
-		}
-
-		// reads/writes and returns byte at stack pointer in page one (range 0x0100 to 0x01FF) (1 cycle)
-		BYTE rwStack(MEMORY &mem, bool rw, BYTE data = 0x00) {
-			BYTE value = rwPage(mem, reg_stackPointer, 0x01, rw, data);
+		// pulls and returns value from stack (address reg_stackPointer | 0x0100) and decrements stack pointer (1 cycle)
+		BYTE pullStack(MEMORY &mem) {
+			BYTE value = mem[reg_stackPointer | 0x0100];
 			reg_stackPointer--;
 			return value;
 		}
