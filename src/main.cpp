@@ -97,15 +97,28 @@ struct CPU {
 						break;
 					case ins_lda_abs:
 						{
-							reg_acc = rw(mem, littleEndianWord(fetch(mem), fetch(mem)), READ);
+							BYTE addressLowByte = fetch(mem);
+							reg_acc = rw(mem, littleEndianWord(addressLowByte, fetch(mem)), READ);
 							fl_zero = (reg_acc == 0);
 							fl_neg = (reg_acc & 0b01000000) > 0;
 						}
 						break;
 					case ins_lda_absx:
 						{
-							rw(mem, absoluteXAddressing(mem, littleEndianWord(fetch(mem), fetch(mem))), READ);
+							BYTE addressLowByte = fetch(mem);
+							reg_acc = rw(mem, absoluteXAddressing(mem, littleEndianWord(addressLowByte, fetch(mem))), READ);
+							fl_zero = (reg_acc == 0);
+							fl_neg = (reg_acc & 0b01000000) > 0;
 						}
+						break;
+					case ins_lda_absy:
+						{
+							BYTE addressLowByte = fetch(mem);
+							reg_acc = rw(mem, absoluteYAddressing(mem, littleEndianWord(addressLowByte, fetch(mem))), READ);
+							fl_zero = (reg_acc == 0);
+							fl_neg = (reg_acc & 0b01000000) > 0;
+						}
+						break;
 				}
 			}
 		}
@@ -117,8 +130,8 @@ struct CPU {
 		BYTE reg_y;					// 8-bit y register
 
 		BYTE fl_carry:1;			// 1-bit carry flag
-		BYTE fl_zero:1;				// 1-bit carry flag
-		BYTE fl_interr:1;			// 1-bit zero flag
+		BYTE fl_zero:1;				// 1-bit zero flag
+		BYTE fl_interr:1;			// 1-bit interrupt flag
 		BYTE fl_dec:1;				// 1-bit decimal flag
 		BYTE fl_break:1;			// 1-bit break flag
 		BYTE fl_oflow:1;			// 1-bit overflow flag
