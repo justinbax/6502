@@ -96,38 +96,34 @@ namespace m6502 {
 							{
 								reg_acc = rw(mem, fetch(mem) + reg_x, READ);
 								cycles--;
-								fl_zero = (reg_acc == 0);
-								fl_neg = (reg_acc & 0b01000000) > 0;
+								setLoadFlags(reg_acc);
 							}
 							break;
 						case ins_lda_abs:
 							{
 								BYTE addressLowByte = fetch(mem);
 								reg_acc = rw(mem, littleEndianWord(addressLowByte, fetch(mem)), READ);
-								fl_zero = (reg_acc == 0);
-								fl_neg = (reg_acc & 0b01000000) > 0;
+								setLoadFlags(reg_acc);
 							}
 							break;
 						case ins_lda_absx:
 							{
 								BYTE addressLowByte = fetch(mem);
 								reg_acc = rw(mem, absoluteXAddressing(mem, littleEndianWord(addressLowByte, fetch(mem))), READ);
-								fl_zero = (reg_acc == 0);
-								fl_neg = (reg_acc & 0b01000000) > 0;
+								setLoadFlags(reg_acc);
 							}
 							break;
 						case ins_lda_absy:
 							{
 								BYTE addressLowByte = fetch(mem);
 								reg_acc = rw(mem, absoluteYAddressing(mem, littleEndianWord(addressLowByte, fetch(mem))), READ);
-								fl_zero = (reg_acc == 0);
-								fl_neg = (reg_acc & 0b01000000) > 0;
+								setLoadFlags(reg_acc);
 							}
 							break;
 					}
 				}
 			}
-		private:
+
 			WORD reg_programCounter;	// 16-bit program counter register
 			BYTE reg_stackPointer;		// 8-bit stack pointer register
 			BYTE reg_acc;				// 8-bit accumulator register
@@ -214,6 +210,12 @@ namespace m6502 {
 					mem[effectiveAddress];
 				}
 				return effectiveAddress;
+			}
+
+			// loads a register with a defined value and sets appropriate flags
+			void setLoadFlags(BYTE reg) {
+				fl_zero = (reg == 0);
+				fl_neg = (0b01000000 & reg) > 0;
 			}
 
 			// returns a low endian word formed from two bytes
