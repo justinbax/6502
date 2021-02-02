@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 
 typedef uint8_t BYTE;	// uint8_t (1 byte)
 typedef uint16_t WORD;	// uint16_t (2 bytes)
@@ -23,12 +24,11 @@ struct MEMORY {
 		}
 
 		// fills memory with given byte array. Does not affect cycle count (done before CPU starts)
-		void fill(BYTE *nData) {
-			WORD i = 0;
-			while (i < sizeof(nData) / sizeof(BYTE)) {
+		void fill(std::vector<BYTE> nData) {
+			for (WORD i = 0; i < nData.size(); i++) {
 				data[i] = nData[i];
-				if (++i > MAX_MEM) {
-					return;
+				if (i == MAX_MEM) {
+					break;
 				}
 			}
 		}
@@ -173,7 +173,7 @@ struct CPU {
 		// returns effective address of absolute X addressing mode (1 cycle in case of page cross, 0 otherwise)
 		WORD absoluteXAddressing(MEMORY &mem, WORD address) {
 			address += reg_x;
-			if (address & 0x00ff < reg_x) {
+			if ((address & 0x00ff) < reg_x) {
 				// extra cycle when page boundary is crossed
 				mem[address];
 			}
@@ -183,7 +183,7 @@ struct CPU {
 		// returns effective address of absolute Y addressing mode (1 cycle in case of page cross, 0 otherwise)
 		WORD absoluteYAddressing(MEMORY &mem, WORD address) {
 			address += reg_y;
-			if (address & 0x00ff < reg_y) {
+			if ((address & 0x00ff) < reg_y) {
 				// extra cycle when page boundary is crossed
 				mem[address];
 			}
@@ -193,14 +193,18 @@ struct CPU {
 		// returns effective address of indirect X (indexed indirect) addressing more ( cycles)
 		WORD indirectXAddressing(MEMORY &mem, WORD address) {
 			address += reg_x;
-			return littleEndianWord(rw(mem, address, READ), rw(mem, address++, READ));
+			BYTE lowByte = rw(mem, address, READ);
+			address++;
+			return littleEndianWord(lowByte, rw(mem, address, READ));
 		}
 
 		// returns effective address of indirect Y (indirect indexed) addressing more (cycles in case of page cross,  otherwise)
 		WORD indirectYAddressing(MEMORY &mem, WORD address) {
-			WORD effectiveAddress = littleEndianWord(rw(mem, address, READ), rw(mem, address++, READ));
+			BYTE lowByte = rw(mem, address, READ);
+			address++;
+			WORD effectiveAddress = littleEndianWord(lowByte, rw(mem, address, READ));
 			effectiveAddress += reg_y;
-			if (effectiveAddress < reg_y) {
+			if ((effectiveAddress & 0x00ff) < reg_y) {
 				// extra cycle when page boundary is crossed
 				mem[effectiveAddress];
 			}
