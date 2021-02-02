@@ -133,7 +133,7 @@ namespace m6502 {
 				reg_stackPointer = 0x00;
 				cycles--;
 				cycles--;
-				fl_carry = fl_zero = fl_interr = fl_dec = fl_break = fl_oflow = fl_neg = false;
+				fl_carry = fl_zero = fl_interr = fl_dec = fl_oflow = fl_neg = false;
 				reg_acc = reg_x = reg_y = 0;
 				// three fake stack accesses to set the stack pointer to 0xFDs
 				mem[reg_stackPointer | 0x0100];
@@ -372,6 +372,35 @@ namespace m6502 {
 								setLoadFlags(reg_stackPointer);
 							}
 							break;
+						case ins_pha:
+							{
+								pushStack(cycles, mem, reg_acc);
+							}
+							break;
+						case ins_php:
+							{
+								// pushes byte with representation NV11DIZC (from flag names, V represents overflow)
+								pushStack(cycles, mem, fl_carry | fl_zero << 1 | fl_interr << 2 | fl_dec << 3 | 0b00110000 | fl_oflow << 6 | fl_neg << 7);
+							}
+							break;
+						case ins_pla:
+							{
+								transfer(cycles, pullStack(cycles, mem), reg_acc);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_plp:
+							{
+								BYTE status = pullStack(cycles, mem);
+								fl_carry = ((status & 0b00000001) > 0);
+								fl_zero = ((status & 0b00000010) > 0);
+								fl_interr = ((status & 0b00000100) > 0);
+								fl_dec = ((status & 0b00001000) > 0);
+								fl_oflow = ((status & 0b01000000) > 0);
+								fl_neg = ((status & 0b10000000) > 0);
+								cycles--;
+							}
+							break;
 					}
 				}
 			}
@@ -386,7 +415,8 @@ namespace m6502 {
 			BYTE fl_zero:1;				// 1-bit zero flag
 			BYTE fl_interr:1;			// 1-bit interrupt flag
 			BYTE fl_dec:1;				// 1-bit decimal flag
-			BYTE fl_break:1;			// 1-bit break flag
+										// during a processor status stack push, bit 4 is set to 1 if pushed from a PHP or BRK instruction or to 0 if pushed from an /IRQ or /NMI signal being pulled low
+										// during a processor status stack push, bit 5 is always set to 1
 			BYTE fl_oflow:1;			// 1-bit overflow flag
 			BYTE fl_neg:1;				// 1-bit negative flag
 
@@ -409,7 +439,7 @@ namespace m6502 {
 				return value;
 			}
 
-			// pushes value to stack (address reg_stackPointer | 0x0100) and increments stack pointer (1 cycle)
+			// pushes value to stack (address reg_stackPointer | 0x0100) and increments stack pointer (2 cycles)
 			BYTE pushStack(uint32_t &cycles, MEMORY &mem, BYTE value) {
 				mem[reg_stackPointer | 0x0100] = value;
 				reg_stackPointer--;
@@ -417,7 +447,7 @@ namespace m6502 {
 				return value;
 			}
 
-			// pulls and returns value from stack (address reg_stackPointer | 0x0100) and decrements stack pointer (1 cycle)
+			// pulls and returns value from stack (address reg_stackPointer | 0x0100) and decrements stack pointer (2 cycles)
 			BYTE pullStack(uint32_t &cycles, MEMORY &mem) {
 				BYTE value = mem[reg_stackPointer | 0x0100];
 				reg_stackPointer++;
