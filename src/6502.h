@@ -114,14 +114,14 @@ namespace m6502 {
 			static constexpr BYTE ins_eor_indx = 0x41;	// indirect X EXCLUSIVE OR instruction (2 bytes, 6 cycles. Affects zero and negative flags)
 			static constexpr BYTE ins_eor_indy = 0x51;	// indirect Y EXCLUSIVE OR instruction (2 bytes, 5-6 cycles. Affects zero and negative flags)
 
-			static constexpr BYTE ins_ora_im = 0x29;	// immediate INCLUSIVE OR instruction (2 bytes, 2 cycles. Affects zero and negative flags)
-			static constexpr BYTE ins_ora_zp = 0x25;	// zero-page INCLUSIVE OR instruction (2 bytes, 3 cycles. Affects zero and negative flags)
-			static constexpr BYTE ins_ora_zpx = 0x35;	// zero-page X INCLUSIVE OR instruction (2 bytes, 4 cycles. Affects zero and negative flags)
-			static constexpr BYTE ins_ora_abs = 0x2D;	// absolute INCLUSIVE OR instruction (3 bytes, 4 cycles. Affects zero and negative flags)
-			static constexpr BYTE ins_ora_absx = 0x3D;	// absolute X INCLUSIVE OR instruction (3 bytes, 4-5 cycles. Affects zero and negative flags)
-			static constexpr BYTE ins_ora_absy = 0x39;	// absolute Y INCLUSIVE OR instruction (3 bytes, 4-5 cycles. Affects zero and negative flags)
-			static constexpr BYTE ins_ora_indx = 0x21;	// indirect X INCLUSIVE OR instruction (2 bytes, 6 cycles. Affects zero and negative flags)
-			static constexpr BYTE ins_ora_indy = 0x31;	// indirect Y INCLUSIVE OR instruction (2 bytes, 5-6 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_ora_im = 0x09;	// immediate INCLUSIVE OR instruction (2 bytes, 2 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_ora_zp = 0x05;	// zero-page INCLUSIVE OR instruction (2 bytes, 3 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_ora_zpx = 0x15;	// zero-page X INCLUSIVE OR instruction (2 bytes, 4 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_ora_abs = 0x0D;	// absolute INCLUSIVE OR instruction (3 bytes, 4 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_ora_absx = 0x1D;	// absolute X INCLUSIVE OR instruction (3 bytes, 4-5 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_ora_absy = 0x19;	// absolute Y INCLUSIVE OR instruction (3 bytes, 4-5 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_ora_indx = 0x01;	// indirect X INCLUSIVE OR instruction (2 bytes, 6 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_ora_indy = 0x11;	// indirect Y INCLUSIVE OR instruction (2 bytes, 5-6 cycles. Affects zero and negative flags)
 
 			static constexpr BYTE ins_bit_zp = 0x24;	// zero-page BIT TEST instruction (2 bytes, 3 cycles. Affects zero, overflow and negative flags)
 			static constexpr BYTE ins_bit_abs = 0x2C;	// absolute BIT TEST instruction (3 bytes, 4 cycles. Affects zero, overflow and negative flags)
@@ -452,6 +452,125 @@ namespace m6502 {
 								setLoadFlags(reg_acc);
 							}
 							break;
+						case ins_eor_im:
+							{
+								reg_acc ^= fetch(mem);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_eor_zp:
+							{
+								reg_acc ^= rw(mem, fetch(mem), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_eor_zpx:
+							{
+								reg_acc ^= rw(mem, zeroPageXAddressing(cycles, fetch(mem)), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_eor_abs:
+							{
+								BYTE addressLowByte = fetch(mem);
+								reg_acc ^= rw(mem, littleEndianWord(addressLowByte, fetch(mem)), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_eor_absx:
+							{
+								BYTE addressLowByte = fetch(mem);
+								reg_acc ^= rw(mem, absoluteXAddressing(mem, littleEndianWord(addressLowByte, fetch(mem))), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_eor_absy:
+							{
+								BYTE addressLowByte = fetch(mem);
+								reg_acc ^= rw(mem, absoluteYAddressing(mem, littleEndianWord(addressLowByte, fetch(mem))), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_eor_indx:
+							{
+								reg_acc ^= rw(mem, indirectXAddressing(cycles, mem, fetch(mem)), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_eor_indy:
+							{
+								reg_acc ^= rw(mem, indirectYAddressing(mem, fetch(mem)), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_ora_im:
+							{
+								reg_acc |= fetch(mem);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_ora_zp:
+							{
+								reg_acc |= rw(mem, fetch(mem), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_ora_zpx:
+							{
+								reg_acc |= rw(mem, zeroPageXAddressing(cycles, fetch(mem)), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_ora_abs:
+							{
+								BYTE addressLowByte = fetch(mem);
+								reg_acc |= rw(mem, littleEndianWord(addressLowByte, fetch(mem)), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_ora_absx:
+							{
+								BYTE addressLowByte = fetch(mem);
+								reg_acc |= rw(mem, absoluteXAddressing(mem, littleEndianWord(addressLowByte, fetch(mem))), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_ora_absy:
+							{
+								BYTE addressLowByte = fetch(mem);
+								reg_acc |= rw(mem, absoluteYAddressing(mem, littleEndianWord(addressLowByte, fetch(mem))), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_ora_indx:
+							{
+								reg_acc |= rw(mem, indirectXAddressing(cycles, mem, fetch(mem)), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_ora_indy:
+							{
+								reg_acc |= rw(mem, indirectYAddressing(mem, fetch(mem)), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_bit_zp:
+							{
+								BYTE value = fetch(mem);
+								fl_zero = (reg_acc & value == 0);
+								fl_oflow = (value & 0b00100000 > 0);
+								fl_neg = (value & 0b01000000 > 0);
+							}
+							break;
+						case ins_bit_abs:
+							{
+								BYTE addressLowByte = fetch(mem);
+								BYTE value = rw(mem, littleEndianWord(addressLowByte, fetch(mem)), READ);\
+								fl_zero = (reg_acc & value == 0);
+								fl_oflow = (value & 0b00100000 > 0);
+								fl_neg = (value & 0b01000000 > 0);
+							}
+							break;
 					}
 				}
 			}
@@ -550,7 +669,7 @@ namespace m6502 {
 			// returns effective address of indirect Y (indirect indexed) addressing more (3 cycles in case of page cross, 2 otherwise)
 			WORD indirectYAddressing(MEMORY &mem, BYTE address, bool extraCycle = false) {
 				BYTE lowByte = rw(mem, address, READ);
-				address++;
+				address++; // ISSUE : 
 				WORD effectiveAddress = littleEndianWord(lowByte, rw(mem, address, READ));
 				effectiveAddress += reg_y;
 				if ((effectiveAddress & 0x00ff) < reg_y || extraCycle) {
