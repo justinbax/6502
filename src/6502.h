@@ -68,6 +68,22 @@ namespace m6502 {
 			static constexpr BYTE ins_ldy_abs = 0xAC;	// absolute LDY instruction (4 cycles, 3 bytes. Affects zero and negative flags)
 			static constexpr BYTE ins_ldy_absx = 0xBC;	// absolute X LDY instruction (4-5 cycles, 3 bytes. Affects zero and negative flags)
 
+			static constexpr BYTE ins_sta_zp = 0x85;	// zero-page STA instruction (3 cycles, 2 bytes. Does not affect any flag)
+			static constexpr BYTE ins_sta_zpx = 0x95;	// zero-page X STA instruction (4 cycles, 2 bytes. Does not affect any flag)
+			static constexpr BYTE ins_sta_abs = 0x8D;	// absolute STA instruction (4 cycles, 3 bytes. Does not affect any flag)
+			static constexpr BYTE ins_sta_absx = 0x9D;	// absolute X STA instruction (5 cycles, 3 bytes. Does not affect any flag)
+			static constexpr BYTE ins_sta_absy = 0x99;	// absolute Y STA instruction (5 cycles, 3 bytes. Does not affect any flag)
+			static constexpr BYTE ins_sta_indx = 0x81;	// indirect X STA instruction (6 cycles, 2 bytes. Does not affect any flag)
+			static constexpr BYTE ins_sta_indy = 0x91;	// indirect Y STA instruction (6 cycles, 2 bytes. Does not affect any flag)
+
+			static constexpr BYTE ins_stx_zp = 0x86;	// zero-page STX instruction (3 cycles, 2 bytes. Does not affect any flag)
+			static constexpr BYTE ins_stx_zpy = 0x96;	// zero-page Y STX instruction (4 cycles, 2 bytes. Does not affect any flag)
+			static constexpr BYTE ins_stx_abs = 0x8E;	// absolute STX instruction (4 cycles, 3 bytes. Does not affect any flag)
+
+			static constexpr BYTE ins_sty_zp = 0x86;	// zero-page STY instruction (3 cycles, 2 bytes. Does not affect any flag)
+			static constexpr BYTE ins_sty_zpx = 0x96;	// zero-page X STY instruction (4 cycles, 2 bytes. Does not affect any flag)
+			static constexpr BYTE ins_sty_abs = 0x8E;	// absolute STY instruction (4 cycles, 3 bytes. Does not affect any flag)
+
 			// sends a reset signal to reset computer state (7 cycles)
 			void reset(uint32_t &cycles, MEMORY &mem) {
 				reg_programCounter = 0x0000;
