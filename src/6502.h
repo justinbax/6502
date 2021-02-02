@@ -119,8 +119,7 @@ namespace m6502 {
 							break;
 						case ins_lda_zpx:
 							{
-								reg_acc = rw(mem, fetch(mem) + reg_x, READ);
-								cycles--;
+								reg_acc = rw(mem, zeroPageXAddressing(cycles, fetch(mem)), READ);
 								setLoadFlags(reg_acc);
 							}
 							break;
@@ -147,7 +146,7 @@ namespace m6502 {
 							break;
 						case ins_lda_indx:
 							{
-								reg_acc = rw(mem, indirectXAddressing(mem, fetch(mem)), READ);
+								reg_acc = rw(mem, indirectXAddressing(cycles, mem, fetch(mem)), READ);
 								setLoadFlags(reg_acc);
 							}
 							break;
@@ -203,7 +202,7 @@ namespace m6502 {
 							break;
 						case ins_ldy_zpx:
 							{
-								reg_y = rw(mem, fetch(mem) + reg_x, READ);
+								reg_y = rw(mem, zeroPageXAddressing(cycles, fetch(mem)), READ);
 								setLoadFlags(reg_y);
 							}
 							break;
@@ -218,6 +217,44 @@ namespace m6502 {
 							{
 								BYTE addressLowByte = fetch(mem);
 								reg_y = rw(mem, absoluteXAddressing(mem, littleEndianWord(addressLowByte, fetch(mem))), READ);
+							}
+							break;
+						case ins_sta_zp:
+							{
+								mem[fetch(mem)] = reg_acc;
+							}
+							break;
+						case ins_sta_zpx:
+							{
+								mem[zeroPageXAddressing(cycles, fetch(mem))] = reg_acc;
+							}
+							break;
+						case ins_sta_abs:
+							{
+								BYTE addressLowByte = fetch(mem);
+								mem[littleEndianWord(addressLowByte, fetch(mem))] = reg_acc;
+							}
+							break;
+						case ins_sta_absx:
+							{
+								BYTE addressLowByte = fetch(mem);
+								mem[absoluteXAddressing(mem, littleEndianWord(addressLowByte, fetch(mem)), true)] = reg_acc;
+							}
+							break;
+						case ins_sta_absy:
+							{
+								BYTE addressLowByte = fetch(mem);
+								mem[absoluteYAddressing(mem, littleEndianWord(addressLowByte, fetch(mem)), true)] = reg_acc;
+							}
+							break;
+						case ins_sta_indx:
+							{
+								mem[indirectXAddressing(cycles, mem, fetch(mem))] = reg_acc;
+							}
+							break;
+						case ins_sta_indy:
+							{
+								mem[indirectYAddressing(mem, fetch(mem), true)] = reg_acc;
 							}
 							break;
 					}
@@ -271,10 +308,16 @@ namespace m6502 {
 				return value;
 			}
 
+			// returns effective address of zero-page X addressing mode (1 cycle)
+			WORD zeroPageXAddressing(uint32_t &cycles, BYTE address) {
+				cycles--;
+				return (BYTE)(address + reg_x);
+			}
+
 			// returns effective address of absolute X addressing mode (1 cycle in case of page cross, 0 otherwise)
-			WORD absoluteXAddressing(MEMORY &mem, WORD address) {
+			WORD absoluteXAddressing(MEMORY &mem, WORD address, bool extraCycle = false) {
 				address += reg_x;
-				if ((address & 0x00ff) < reg_x) {
+				if ((address & 0x00ff) < reg_x || extraCycle) {
 					// extra cycle when page boundary is crossed
 					mem[address];
 				}
@@ -282,30 +325,31 @@ namespace m6502 {
 			}
 
 			// returns effective address of absolute Y addressing mode (1 cycle in case of page cross, 0 otherwise)
-			WORD absoluteYAddressing(MEMORY &mem, WORD address) {
+			WORD absoluteYAddressing(MEMORY &mem, WORD address, bool extraCycle = false) {
 				address += reg_y;
-				if ((address & 0x00ff) < reg_y) {
+				if ((address & 0x00ff) < reg_y || extraCycle) {
 					// extra cycle when page boundary is crossed
 					mem[address];
 				}
 				return address;
 			}
 
-			// returns effective address of indirect X (indexed indirect) addressing more ( cycles)
-			WORD indirectXAddressing(MEMORY &mem, WORD address) {
+			// returns effective address of indirect X (indexed indirect) addressing more (3 cycles)
+			WORD indirectXAddressing(uint32_t &cycles, MEMORY &mem, BYTE address) {
 				address += reg_x;
+				cycles--;
 				BYTE lowByte = rw(mem, address, READ);
 				address++;
 				return littleEndianWord(lowByte, rw(mem, address, READ));
 			}
 
-			// returns effective address of indirect Y (indirect indexed) addressing more (cycles in case of page cross,  otherwise)
-			WORD indirectYAddressing(MEMORY &mem, WORD address) {
+			// returns effective address of indirect Y (indirect indexed) addressing more (3 cycles in case of page cross, 2 otherwise)
+			WORD indirectYAddressing(MEMORY &mem, BYTE address, bool extraCycle = false) {
 				BYTE lowByte = rw(mem, address, READ);
 				address++;
 				WORD effectiveAddress = littleEndianWord(lowByte, rw(mem, address, READ));
 				effectiveAddress += reg_y;
-				if ((effectiveAddress & 0x00ff) < reg_y) {
+				if ((effectiveAddress & 0x00ff) < reg_y || extraCycle) {
 					// extra cycle when page boundary is crossed
 					mem[effectiveAddress];
 				}
