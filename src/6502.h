@@ -47,42 +47,64 @@ namespace m6502 {
 			static constexpr bool READ = true;
 			static constexpr bool WRITE = false;
 
-			static constexpr BYTE ins_lda_im = 0xA9;	// immediate LDA instruction (2 cycles, 2 bytes. Affects zero and negative flags)
-			static constexpr BYTE ins_lda_zp = 0xA5;	// zero-page LDA instruction (3 cycles, 2 bytes. Affects zero and negative flags)
-			static constexpr BYTE ins_lda_zpx = 0xB5;	// zero-page X LDA instruction (4 cycles, 2 bytes. Affects zero and negative flags)
-			static constexpr BYTE ins_lda_abs = 0xAD; 	// absolute LDA instruction (4 cycles, 3 bytes. Affects zero and negative flags)
-			static constexpr BYTE ins_lda_absx = 0xBD; 	// absolute X LDA instruction (4-5 cycles, 3 bytes. Affects zero and negative flags)
-			static constexpr BYTE ins_lda_absy = 0xB9; 	// absolute Y LDA instruction (4-5 cycles, 3 bytes. Affects zero and negative flags)
-			static constexpr BYTE ins_lda_indx = 0xA1; 	// indirect X LDA instruction (6 cycles, 2 bytes. Affects zero and negative flags)
-			static constexpr BYTE ins_lda_indy = 0xB1;	// indirect Y LDA instruction (5-6 cycles, 2 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_lda_im = 0xA9;	// immediate LOAD A instruction (2 cycles, 2 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_lda_zp = 0xA5;	// zero-page LOAD A instruction (3 cycles, 2 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_lda_zpx = 0xB5;	// zero-page X LOAD A instruction (4 cycles, 2 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_lda_abs = 0xAD; 	// absolute LOAD A instruction (4 cycles, 3 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_lda_absx = 0xBD; 	// absolute X LOAD A instruction (4-5 cycles, 3 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_lda_absy = 0xB9; 	// absolute Y LOAD A instruction (4-5 cycles, 3 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_lda_indx = 0xA1; 	// indirect X LOAD A instruction (6 cycles, 2 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_lda_indy = 0xB1;	// indirect Y LOAD A instruction (5-6 cycles, 2 bytes. Affects zero and negative flags)
 
-			static constexpr BYTE ins_ldx_im = 0xA2;	// immediate LDX instruction (2 cycles, 2 bytes. Affects zero and negative flags)
-			static constexpr BYTE ins_ldx_zp = 0xA6;	// zero-page LDX instruction (3 cycles, 2 bytes. Affects zero and negative flags)
-			static constexpr BYTE ins_ldx_zpy = 0xB6;	// zero-page Y LDX instruction (4 cycles, 2 bytes. Affects zero and negative flags)
-			static constexpr BYTE ins_ldx_abs = 0xAE;	// absolute LDX instruction (4 cycles, 3 bytes. Affects zero and negative flags)
-			static constexpr BYTE ins_ldx_absy = 0xBE;	// absolute Y LDX instruction (4-5 cycles, 3 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_ldx_im = 0xA2;	// immediate LOAD X instruction (2 cycles, 2 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_ldx_zp = 0xA6;	// zero-page LOAD X instruction (3 cycles, 2 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_ldx_zpy = 0xB6;	// zero-page Y LOAD X instruction (4 cycles, 2 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_ldx_abs = 0xAE;	// absolute LOAD X instruction (4 cycles, 3 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_ldx_absy = 0xBE;	// absolute Y LOAD X instruction (4-5 cycles, 3 bytes. Affects zero and negative flags)
 
-			static constexpr BYTE ins_ldy_im = 0xA0;	// immediate LDY instruction (2 cycles, 2 bytes. Affects zero and negative flags)
-			static constexpr BYTE ins_ldy_zp = 0xA4;	// zero-page LDY instruction (3 cycles, 2 bytes. Affects zero and negative flags)
-			static constexpr BYTE ins_ldy_zpx = 0xB4;	// zero-page X LDY instruction (4 cycles, 2 bytes. Affects zero and negative flags)
-			static constexpr BYTE ins_ldy_abs = 0xAC;	// absolute LDY instruction (4 cycles, 3 bytes. Affects zero and negative flags)
-			static constexpr BYTE ins_ldy_absx = 0xBC;	// absolute X LDY instruction (4-5 cycles, 3 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_ldy_im = 0xA0;	// immediate LOAD Y instruction (2 cycles, 2 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_ldy_zp = 0xA4;	// zero-page LOAD Y instruction (3 cycles, 2 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_ldy_zpx = 0xB4;	// zero-page X LOAD Y instruction (4 cycles, 2 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_ldy_abs = 0xAC;	// absolute LOAD Y instruction (4 cycles, 3 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_ldy_absx = 0xBC;	// absolute X LOAD Y instruction (4-5 cycles, 3 bytes. Affects zero and negative flags)
 
-			static constexpr BYTE ins_sta_zp = 0x85;	// zero-page STA instruction (3 cycles, 2 bytes. Does not affect any flag)
-			static constexpr BYTE ins_sta_zpx = 0x95;	// zero-page X STA instruction (4 cycles, 2 bytes. Does not affect any flag)
-			static constexpr BYTE ins_sta_abs = 0x8D;	// absolute STA instruction (4 cycles, 3 bytes. Does not affect any flag)
-			static constexpr BYTE ins_sta_absx = 0x9D;	// absolute X STA instruction (5 cycles, 3 bytes. Does not affect any flag)
-			static constexpr BYTE ins_sta_absy = 0x99;	// absolute Y STA instruction (5 cycles, 3 bytes. Does not affect any flag)
-			static constexpr BYTE ins_sta_indx = 0x81;	// indirect X STA instruction (6 cycles, 2 bytes. Does not affect any flag)
-			static constexpr BYTE ins_sta_indy = 0x91;	// indirect Y STA instruction (6 cycles, 2 bytes. Does not affect any flag)
+			static constexpr BYTE ins_sta_zp = 0x85;	// zero-page STORE A instruction (3 cycles, 2 bytes. Does not affect any flag)
+			static constexpr BYTE ins_sta_zpx = 0x95;	// zero-page X STORE A instruction (4 cycles, 2 bytes. Does not affect any flag)
+			static constexpr BYTE ins_sta_abs = 0x8D;	// absolute STORE A instruction (4 cycles, 3 bytes. Does not affect any flag)
+			static constexpr BYTE ins_sta_absx = 0x9D;	// absolute X STORE A instruction (5 cycles, 3 bytes. Does not affect any flag)
+			static constexpr BYTE ins_sta_absy = 0x99;	// absolute Y STORE A instruction (5 cycles, 3 bytes. Does not affect any flag)
+			static constexpr BYTE ins_sta_indx = 0x81;	// indirect X STORE A instruction (6 cycles, 2 bytes. Does not affect any flag)
+			static constexpr BYTE ins_sta_indy = 0x91;	// indirect Y STORE A instruction (6 cycles, 2 bytes. Does not affect any flag)
 
-			static constexpr BYTE ins_stx_zp = 0x86;	// zero-page STX instruction (3 cycles, 2 bytes. Does not affect any flag)
-			static constexpr BYTE ins_stx_zpy = 0x96;	// zero-page Y STX instruction (4 cycles, 2 bytes. Does not affect any flag)
-			static constexpr BYTE ins_stx_abs = 0x8E;	// absolute STX instruction (4 cycles, 3 bytes. Does not affect any flag)
+			static constexpr BYTE ins_stx_zp = 0x86;	// zero-page STORE X instruction (3 cycles, 2 bytes. Does not affect any flag)
+			static constexpr BYTE ins_stx_zpy = 0x96;	// zero-page Y STORE X instruction (4 cycles, 2 bytes. Does not affect any flag)
+			static constexpr BYTE ins_stx_abs = 0x8E;	// absolute STORE X instruction (4 cycles, 3 bytes. Does not affect any flag)
 
-			static constexpr BYTE ins_sty_zp = 0x86;	// zero-page STY instruction (3 cycles, 2 bytes. Does not affect any flag)
-			static constexpr BYTE ins_sty_zpx = 0x96;	// zero-page X STY instruction (4 cycles, 2 bytes. Does not affect any flag)
-			static constexpr BYTE ins_sty_abs = 0x8E;	// absolute STY instruction (4 cycles, 3 bytes. Does not affect any flag)
+			static constexpr BYTE ins_sty_zp = 0x84;	// zero-page STORE Y instruction (3 cycles, 2 bytes. Does not affect any flag)
+			static constexpr BYTE ins_sty_zpx = 0x94;	// zero-page X STORE Y instruction (4 cycles, 2 bytes. Does not affect any flag)
+			static constexpr BYTE ins_sty_abs = 0x8C;	// absolute STORE Y instruction (4 cycles, 3 bytes. Does not affect any flag)
+
+			static constexpr BYTE ins_tax = 0xAA;		// TRANSFER A TO X instruction (1 byte, 2 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_tay = 0xA8;		// TRANSFER A TO Y instruction (1 byte, 2 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_txa = 0x8A;		// TRANSFER X TO A instruction (1 byte, 2 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_tya = 0x98;		// TRANSFER Y TO A instruction (1 byte, 2 cycles. Affects zero and negative flags)
+			
+			static constexpr BYTE ins_tsx = 0xBA;		// TRANSFER SP TO X instruction (1 byte, 2 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_txs = 0x9A;		// TRANSFER X TO SP instruction (1 byte, 2 cycles. Does not affect any flag)
+			static constexpr BYTE ins_pha = 0x48;		// PUSH A instruction (1 byte, 2 cycles. Does not affect any flag)
+			static constexpr BYTE ins_php = 0x08;		// PUSH PROCESSOR STATUS instruction (1 byte, 3 cycles. Does not affect any flag)
+			static constexpr BYTE ins_pla = 0x68;		// PULL ACCUMULATOR instruction (1 byte, 4 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_plp = 0x28;		// PULL PROCESSOR STATUS instruction (1 byte, 4 cycles. Affects all flags (pulled from stack))
+
+			static constexpr BYTE ins_and_im = 0x29;	// immediate AND instruction (2 bytes, 2 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_and_zp = 0x25;	// zero-page AND instruction (2 bytes, 3 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_and_zpx = 0x35;	// zero-page X AND instruction (2 bytes, 4 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_and_abs = 0x2D;	// absolute AND instruction (3 bytes, 4 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_and_absx = 0x3D;	// absolute X AND instruction (3 bytes, 4-5 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_and_absy = 0x39;	// absolute Y AND instruction (3 bytes, 4-5 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_and_indx = 0x21;	// indirect X AND instruction (2 bytes, 6 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_and_indy = 0x31;	// indirect Y AND instruction (2 bytes, 5-6 cycles. Affects zero and negative flags)
+
 
 			// sends a reset signal to reset computer state (7 cycles)
 			void reset(uint32_t &cycles, MEMORY &mem) {
@@ -170,7 +192,7 @@ namespace m6502 {
 							break;
 						case ins_ldx_zpy:
 							{
-								reg_x = rw(mem, fetch(mem) + reg_y, READ);
+								reg_x = rw(mem, zeroPageYAddressing(cycles, fetch(mem)), READ);
 								setLoadFlags(reg_x);
 							}
 							break;
@@ -217,6 +239,7 @@ namespace m6502 {
 							{
 								BYTE addressLowByte = fetch(mem);
 								reg_y = rw(mem, absoluteXAddressing(mem, littleEndianWord(addressLowByte, fetch(mem))), READ);
+								setLoadFlags(reg_y);
 							}
 							break;
 						case ins_sta_zp:
@@ -257,6 +280,61 @@ namespace m6502 {
 								mem[indirectYAddressing(mem, fetch(mem), true)] = reg_acc;
 							}
 							break;
+						case ins_stx_zp:
+							{
+								mem[fetch(mem)] = reg_x;
+							}
+							break;
+						case ins_stx_zpy:
+							{
+								mem[zeroPageYAddressing(cycles, fetch(mem))] = reg_x;
+							}
+							break;
+						case ins_stx_abs:
+							{
+								BYTE addressLowByte = fetch(mem);
+								mem[littleEndianWord(addressLowByte, fetch(mem))] = reg_x;
+							}
+							break;
+						case ins_sty_zp:
+							{
+								mem[fetch(mem)] = reg_y;
+							}
+							break;
+						case ins_sty_zpx:
+							{
+								mem[zeroPageXAddressing(cycles, fetch(mem))] = reg_y;
+							}
+							break;
+						case ins_sty_abs:
+							{
+								BYTE addressLowByte = fetch(mem);
+								mem[littleEndianWord(addressLowByte, fetch(mem))] = reg_y;
+							}
+							break;
+						case ins_tax:
+							{
+								reg_x = reg_acc;
+								setLoadFlags(reg_x);
+							}
+							break;
+						case ins_tay:
+							{
+								reg_y = reg_acc;
+								setLoadFlags(reg_y);
+							}
+							break;
+						case ins_txa:
+							{
+								reg_acc = reg_x;
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_tya:
+							{
+								reg_acc = reg_y;
+								setLoadFlags(reg_acc);
+							}
 					}
 				}
 			}
@@ -311,7 +389,13 @@ namespace m6502 {
 			// returns effective address of zero-page X addressing mode (1 cycle)
 			WORD zeroPageXAddressing(uint32_t &cycles, BYTE address) {
 				cycles--;
-				return (BYTE)(address + reg_x);
+				return (address + reg_x) & 0x00ff;
+			}
+
+			// returns effective address of zero-page Y addressing mode (1 cycle)
+			WORD zeroPageYAddressing(uint32_t &cycles, BYTE address) {
+				cycles--;
+				return (address + reg_y) & 0x00ff;
 			}
 
 			// returns effective address of absolute X addressing mode (1 cycle in case of page cross, 0 otherwise)
