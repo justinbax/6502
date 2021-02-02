@@ -12,8 +12,6 @@ namespace m6502 {
 	// computer memory struct
 	struct MEMORY {
 		public:
-			static constexpr WORD MAX_MEM = 0xFFFF;
-
 			// returns reference to data[address] (1 cycle)
 			BYTE &operator[](WORD address) {
 				(*cycles)--;
@@ -38,6 +36,7 @@ namespace m6502 {
 				}
 			}
 		private:
+			static constexpr WORD MAX_MEM = 0xFFFF;
 			BYTE data[MAX_MEM];	// memory data (64 KiB)
 			uint32_t *cycles;	// pointer to cycle count
 	}; // struct MEMORY
@@ -56,6 +55,18 @@ namespace m6502 {
 			static constexpr BYTE ins_lda_absy = 0xB9; 	// absolute Y LDA instruction (4-5 cycles, 3 bytes. Affects zero and negative flags)
 			static constexpr BYTE ins_lda_indx = 0xA1; 	// indirect X LDA instruction (6 cycles, 2 bytes. Affects zero and negative flags)
 			static constexpr BYTE ins_lda_indy = 0xB1;	// indirect Y LDA instruction (5-6 cycles, 2 bytes. Affects zero and negative flags)
+
+			static constexpr BYTE ins_ldx_im = 0xA2;	// immediate LDX instruction (2 cycles, 2 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_ldx_zp = 0xA6;	// zero-page LDX instruction (3 cycles, 2 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_ldx_zpy = 0xB6;	// zero-page Y LDX instruction (4 cycles, 2 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_ldx_abs = 0xAE;	// absolute LDX instruction (4 cycles, 3 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_ldx_absy = 0xBE;	// absolute Y LDX instruction (4-5 cycles, 3 bytes. Affects zero and negative flags)
+
+			static constexpr BYTE ins_ldy_im = 0xA0;	// immediate LDY instruction (2 cycles, 2 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_ldy_zp = 0xA4;	// zero-page LDY instruction (3 cycles, 2 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_ldy_zpx = 0xB4;	// zero-page X LDY instruction (4 cycles, 2 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_ldy_abs = 0xAC;	// absolute LDY instruction (4 cycles, 3 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_ldy_absx = 0xBC;	// absolute X LDY instruction (4-5 cycles, 3 bytes. Affects zero and negative flags)
 
 			// sends a reset signal to reset computer state (7 cycles)
 			void reset(uint32_t &cycles, MEMORY &mem) {
@@ -81,15 +92,13 @@ namespace m6502 {
 						case ins_lda_im:
 							{
 								reg_acc = fetch(mem);
-								fl_zero = (reg_acc == 0);
-								fl_neg = (reg_acc & 0b01000000) > 0;
+								setLoadFlags(reg_acc);
 							}
 							break;
 						case ins_lda_zp:
 							{
 								reg_acc = rw(mem, fetch(mem), READ);
-								fl_zero = (reg_acc == 0);
-								fl_neg = (reg_acc & 0b01000000) > 0;
+								setLoadFlags(reg_acc);
 							}
 							break;
 						case ins_lda_zpx:
@@ -118,6 +127,81 @@ namespace m6502 {
 								BYTE addressLowByte = fetch(mem);
 								reg_acc = rw(mem, absoluteYAddressing(mem, littleEndianWord(addressLowByte, fetch(mem))), READ);
 								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_lda_indx:
+							{
+								reg_acc = rw(mem, indirectXAddressing(mem, fetch(mem)), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_lda_indy:
+							{
+								reg_acc = rw(mem, indirectYAddressing(mem, fetch(mem)), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_ldx_im:
+							{
+								reg_x = fetch(mem);
+								setLoadFlags(reg_x);
+							}
+							break;
+						case ins_ldx_zp:
+							{
+								reg_x = rw(mem, fetch(mem), READ);
+								setLoadFlags(reg_x);
+							}
+							break;
+						case ins_ldx_zpy:
+							{
+								reg_x = rw(mem, fetch(mem) + reg_y, READ);
+								setLoadFlags(reg_x);
+							}
+							break;
+						case ins_ldx_abs:
+							{
+								BYTE addressLowByte = fetch(mem);
+								reg_x = rw(mem, littleEndianWord(addressLowByte, fetch(mem)), READ);
+								setLoadFlags(reg_x);
+							}
+							break;
+						case ins_ldx_absy:
+							{
+								BYTE addressLowByte = fetch(mem);
+								reg_x = rw(mem, absoluteYAddressing(mem, littleEndianWord(addressLowByte, fetch(mem))), READ);
+								setLoadFlags(reg_x);
+							}
+							break;
+						case ins_ldy_im:
+							{
+								reg_y = fetch(mem);
+								setLoadFlags(reg_y);
+							}
+							break;
+						case ins_ldy_zp:
+							{
+								reg_y = rw(mem, fetch(mem), READ);
+								setLoadFlags(reg_y);
+							}
+							break;
+						case ins_ldy_zpx:
+							{
+								reg_y = rw(mem, fetch(mem) + reg_x, READ);
+								setLoadFlags(reg_y);
+							}
+							break;
+						case ins_ldy_abs:
+							{
+								BYTE addressLowByte = fetch(mem);
+								reg_y = rw(mem, littleEndianWord(addressLowByte, fetch(mem)), READ);
+								setLoadFlags(reg_y);
+							}
+							break;
+						case ins_ldy_absx:
+							{
+								BYTE addressLowByte = fetch(mem);
+								reg_y = rw(mem, absoluteXAddressing(mem, littleEndianWord(addressLowByte, fetch(mem))), READ);
 							}
 							break;
 					}
