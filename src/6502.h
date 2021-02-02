@@ -401,6 +401,57 @@ namespace m6502 {
 								cycles--;
 							}
 							break;
+						case ins_and_im:
+							{
+								reg_acc &= fetch(mem);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_and_zp:
+							{
+								reg_acc &= rw(mem, fetch(mem), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_and_zpx:
+							{
+								reg_acc &= rw(mem, zeroPageXAddressing(cycles, fetch(mem)), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_and_abs:
+							{
+								BYTE addressLowByte = fetch(mem);
+								reg_acc &= rw(mem, littleEndianWord(addressLowByte, fetch(mem)), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_and_absx:
+							{
+								BYTE addressLowByte = fetch(mem);
+								reg_acc &= rw(mem, absoluteXAddressing(mem, littleEndianWord(addressLowByte, fetch(mem))), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_and_absy:
+							{
+								BYTE addressLowByte = fetch(mem);
+								reg_acc &= rw(mem, absoluteYAddressing(mem, littleEndianWord(addressLowByte, fetch(mem))), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_and_indx:
+							{
+								reg_acc &= rw(mem, indirectXAddressing(cycles, mem, fetch(mem)), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_and_indy:
+							{
+								reg_acc &= rw(mem, indirectYAddressing(mem, fetch(mem)), READ);
+								setLoadFlags(reg_acc);
+							}
+							break;
 					}
 				}
 			}
@@ -526,6 +577,6 @@ namespace m6502 {
 				return lowByte | (WORD)(highByte) << 8;
 			}
 	}; // struct CPU
-} // namespace 6502
+} // namespace m6502
 
 #endif // ifndef _6502_H
