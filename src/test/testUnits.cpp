@@ -58,7 +58,6 @@ class B : public testUnit {
 class C : public testUnit {
 	public:
 		void test() {
-			cycles = 0x0001ffff;
 			std::cout << "test unit C started" << std::endl;
 			m6502::BYTE data;
 			for (m6502::WORD i = 0; i < 0x7fff; i++) {
@@ -77,19 +76,15 @@ class C : public testUnit {
 		}
 }; // class C : public testUnit
 
+// test unit for littleEndianWord
 class D : public testUnit {
 	public:
 		void test() {
 			std::cout << "test D started" << std::endl;
-			mem[0xFFFC] = 0xAD;
-			mem[0xFFFD] = 0xDE;
-			cpu.reset(cycles, mem);
-			assert(cycles == 0x0001ffff);
-			std::cout << "test D : first assert passed" << std::endl;
-			assert(cpu.reg_stackPointer == 0xFD);
-			std::cout << "test D : second assert passed" << std::endl;
-			assert(cpu.reg_programCounter == 0xDEAD);
-			std::cout << "test D : third assert passed" << std::endl;
+			m6502::BYTE lowByte = 0xAD;
+			m6502::BYTE highByte = 0xDE;
+			assert(cpu.littleEndianWord(lowByte, highByte) == 0xDEAD);
+			std::cout << "test unit D : first assert passed" << std::endl;
 			std::cout << "test D completed" << std::endl;
 		}
 }; // class D : public testUnit
@@ -98,9 +93,17 @@ class D : public testUnit {
 class E : public testUnit {
 	public:
 		void test() {
-			std::cout << "test unit E started" << std::endl;
-
-			std::cout << "test unit E completed" << std::endl;
+			std::cout << "test D started" << std::endl;
+			mem[0xFFFC] = 0xAD;
+			mem[0xFFFD] = 0xDE;
+			cpu.reset(cycles, mem);
+			assert(cycles == 0x0001fff6);
+			std::cout << "test D : first assert passed" << std::endl;
+			assert(cpu.reg_stackPointer == 0xFD);
+			std::cout << "test D : second assert passed" << std::endl;
+			assert(cpu.reg_programCounter == 0xDEAD);
+			std::cout << "test D : third assert passed" << std::endl;
+			std::cout << "test D completed" << std::endl;
 		}
 }; // class E : public testUnit
 
@@ -108,8 +111,12 @@ int main() {
 	A a;
 	B b;
 	C c;
+	D d;
+	E e;
 	a.test();
 	b.test();
 	c.test();
+	d.test();
+	e.test();
 	return 0;
 }

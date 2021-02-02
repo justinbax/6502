@@ -105,6 +105,27 @@ namespace m6502 {
 			static constexpr BYTE ins_and_indx = 0x21;	// indirect X AND instruction (2 bytes, 6 cycles. Affects zero and negative flags)
 			static constexpr BYTE ins_and_indy = 0x31;	// indirect Y AND instruction (2 bytes, 5-6 cycles. Affects zero and negative flags)
 
+			static constexpr BYTE ins_eor_im = 0x49;	// immediate EXCLUSIVE OR instruction (2 bytes, 2 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_eor_zp = 0x45;	// zero-page EXCLUSIVE OR instruction (2 bytes, 3 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_eor_zpx = 0x55;	// zero-page X EXCLUSIVE OR instruction (2 bytes, 4 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_eor_abs = 0x4D;	// absolute EXCLUSIVE OR instruction (3 bytes, 4 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_eor_absx = 0x5D;	// absolute X EXCLUSIVE OR instruction (3 bytes, 4-5 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_eor_absy = 0x59;	// absolute Y EXCLUSIVE OR instruction (3 bytes, 4-5 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_eor_indx = 0x41;	// indirect X EXCLUSIVE OR instruction (2 bytes, 6 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_eor_indy = 0x51;	// indirect Y EXCLUSIVE OR instruction (2 bytes, 5-6 cycles. Affects zero and negative flags)
+
+			static constexpr BYTE ins_ora_im = 0x29;	// immediate INCLUSIVE OR instruction (2 bytes, 2 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_ora_zp = 0x25;	// zero-page INCLUSIVE OR instruction (2 bytes, 3 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_ora_zpx = 0x35;	// zero-page X INCLUSIVE OR instruction (2 bytes, 4 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_ora_abs = 0x2D;	// absolute INCLUSIVE OR instruction (3 bytes, 4 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_ora_absx = 0x3D;	// absolute X INCLUSIVE OR instruction (3 bytes, 4-5 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_ora_absy = 0x39;	// absolute Y INCLUSIVE OR instruction (3 bytes, 4-5 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_ora_indx = 0x21;	// indirect X INCLUSIVE OR instruction (2 bytes, 6 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_ora_indy = 0x31;	// indirect Y INCLUSIVE OR instruction (2 bytes, 5-6 cycles. Affects zero and negative flags)
+
+			static constexpr BYTE ins_bit_zp = 0x24;	// zero-page BIT TEST instruction (2 bytes, 3 cycles. Affects zero, overflow and negative flags)
+			static constexpr BYTE ins_bit_abs = 0x2C;	// absolute BIT TEST instruction (3 bytes, 4 cycles. Affects zero, overflow and negative flags)
+
 
 			// sends a reset signal to reset computer state (7 cycles)
 			void reset(uint32_t &cycles, MEMORY &mem) {
@@ -114,10 +135,13 @@ namespace m6502 {
 				cycles--;
 				fl_carry = fl_zero = fl_interr = fl_dec = fl_break = fl_oflow = fl_neg = false;
 				reg_acc = reg_x = reg_y = 0;
-				// sets stack pointer register to 0xFD
-				pushStack(mem, 0x00);
-				pushStack(mem, 0x00);
-				pushStack(mem, 0x00);
+				// three fake stack accesses to set the stack pointer to 0xFDs
+				mem[reg_stackPointer | 0x0100];
+				reg_stackPointer--;
+				mem[reg_stackPointer | 0x0100];
+				reg_stackPointer--;
+				mem[reg_stackPointer | 0x0100];
+				reg_stackPointer--;
 				// stores contents at 0xFFFC and 0xFFFD (little-endian) in program counter (contains location of reset routine)
 				reg_programCounter = littleEndianWord(rw(mem, 0xFFFC, READ), rw(mem, 0xFFFD, READ));
 			}
@@ -314,27 +338,40 @@ namespace m6502 {
 							break;
 						case ins_tax:
 							{
-								reg_x = reg_acc;
+								transfer(cycles, reg_acc, reg_x);
 								setLoadFlags(reg_x);
 							}
 							break;
 						case ins_tay:
 							{
-								reg_y = reg_acc;
+								transfer(cycles, reg_acc, reg_x);
 								setLoadFlags(reg_y);
 							}
 							break;
 						case ins_txa:
 							{
-								reg_acc = reg_x;
+								transfer(cycles, reg_x, reg_acc);
 								setLoadFlags(reg_acc);
 							}
 							break;
 						case ins_tya:
 							{
-								reg_acc = reg_y;
+								transfer(cycles, reg_y, reg_acc);
 								setLoadFlags(reg_acc);
 							}
+							break;
+						case ins_tsx:
+							{
+								transfer(cycles, reg_stackPointer, reg_x);
+								setLoadFlags(reg_x);
+							}
+							break;
+						case ins_txs:
+							{
+								transfer(cycles, reg_x, reg_stackPointer);
+								setLoadFlags(reg_stackPointer);
+							}
+							break;
 					}
 				}
 			}
@@ -373,16 +410,18 @@ namespace m6502 {
 			}
 
 			// pushes value to stack (address reg_stackPointer | 0x0100) and increments stack pointer (1 cycle)
-			BYTE pushStack(MEMORY &mem, BYTE value) {
+			BYTE pushStack(uint32_t &cycles, MEMORY &mem, BYTE value) {
 				mem[reg_stackPointer | 0x0100] = value;
-				reg_stackPointer++;
+				reg_stackPointer--;
+				cycles--;
 				return value;
 			}
 
 			// pulls and returns value from stack (address reg_stackPointer | 0x0100) and decrements stack pointer (1 cycle)
-			BYTE pullStack(MEMORY &mem) {
+			BYTE pullStack(uint32_t &cycles, MEMORY &mem) {
 				BYTE value = mem[reg_stackPointer | 0x0100];
-				reg_stackPointer--;
+				reg_stackPointer++;
+				cycles--;
 				return value;
 			}
 
@@ -446,9 +485,15 @@ namespace m6502 {
 				fl_neg = (0b01000000 & reg) > 0;
 			}
 
+			// transfers contents of a register to another
+			void transfer(uint32_t &cycles, BYTE firstReg, BYTE &secondReg) {
+				secondReg = firstReg;
+				cycles--;
+			}
+
 			// returns a low endian word formed from two bytes
 			WORD littleEndianWord(BYTE lowByte, BYTE highByte) {
-				return lowByte | (WORD)(highByte) >> 8;
+				return lowByte | (WORD)(highByte) << 8;
 			}
 	}; // struct CPU
 } // namespace 6502
