@@ -161,6 +161,20 @@ namespace m6502 {
 			static constexpr BYTE ins_cpy_zp = 0xC4;	// zero-page COMPARE Y instruction (2 bytes, 3 cycles. Affects carry, zero and negative flags)
 			static constexpr BYTE ins_cpy_abs = 0xCC;	// absolute COMPARE Y instruction (3 bytes, 4 cycles. Affects carry, zero and negative flags)
 
+			static constexpr BYTE ins_inc_zp = 0xE6;	// zero-page INCREMENT instruction (2 bytes, 5 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_inc_zpx = 0xF6;	// zero-page X INCREMENT instruction (2 bytes, 6 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_inc_abs = 0xEE;	// absolute INCREMENT instruction (3 bytes, 6 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_inc_absx = 0xFE;	// absolute X INCREMENT instruction (3 bytes, 7 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_inx = 0xE8;		// INCREMENT X instruction (1 byte, 2 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_iny = 0xC8;		// INCREMENT Y instruction (1 byte, 2 cycles. Affects zero and negative flags)
+
+			static constexpr BYTE ins_dec_zp = 0xC6;	// zero-page DECREMENT instruction (2 bytes, 5 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_dec_zpx = 0xD6;	// zero-page X DECREMENT instruction (2 bytes, 6 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_dec_abs = 0xCE;	// absolute DECREMENT instruction (3 bytes, 6 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_dec_absx = 0xDE;	// absolute X DECREMENT instruction (3 bytes, 7 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_dex = 0xCA;		// DECREMENT X instruction (1 byte, 2 cycles. Affects zero and negative flags)
+			static constexpr BYTE ins_dey = 0x88;		// DECREMENT Y instruction (1 byte, 2 cycles. Affects zero and negative flags)
+
 
 			// sends a reset signal to reset computer state (7 cycles)
 			void reset(uint32_t &cycles, MEMORY &mem) {
@@ -751,6 +765,94 @@ namespace m6502 {
 								compare(reg_y, rw(mem, littleEndianWord(addressLowByte, fetch(mem)), READ));
 							}
 							break;
+						case ins_inc_zp:
+							{
+								BYTE result = mem[rw(mem, fetch(mem), READ)]++;
+								setLoadFlags(result);
+								cycles--;
+							}
+							break;
+						case ins_inc_zpx:
+							{
+								BYTE result = mem[rw(mem, zeroPageXAddressing(cycles, fetch(mem)), READ)]++;
+								setLoadFlags(result);
+								cycles--;
+							}
+							break;
+						case ins_inc_abs:
+							{
+								BYTE addressLowByte = fetch(mem);
+								BYTE result = mem[rw(mem, littleEndianWord(addressLowByte, fetch(mem)), READ)]++;
+								setLoadFlags(result);
+								cycles--;
+							}
+							break;
+						case ins_inc_absx:
+							{
+								BYTE addressLowByte = fetch(mem);
+								BYTE result = mem[rw(mem, absoluteXAddressing(mem, littleEndianWord(addressLowByte, fetch(mem)), true), READ)]++;
+								setLoadFlags(result);
+								cycles--;
+							}
+							break;
+						case ins_inx:
+							{
+								reg_x++;
+								setLoadFlags(reg_x);
+								cycles--;
+							}
+							break;
+						case ins_iny:
+							{
+								reg_y++;
+								setLoadFlags(reg_y);
+								cycles--;
+							}
+							break;
+						case ins_dec_zp:
+							{
+								BYTE result = mem[rw(mem, fetch(mem), READ)]--;
+								setLoadFlags(result);
+								cycles--;
+							}
+							break;
+						case ins_dec_zpx:
+							{
+								BYTE result = mem[rw(mem, zeroPageXAddressing(cycles, fetch(mem)), READ)]--;
+								setLoadFlags(result);
+								cycles--;
+							}
+							break;
+						case ins_dec_abs:
+							{
+								BYTE addressLowByte = fetch(mem);
+								BYTE result = mem[rw(mem, littleEndianWord(addressLowByte, fetch(mem)), READ)]--;
+								setLoadFlags(result);
+								cycles--;
+							}
+							break;
+						case ins_dec_absx:
+							{
+								BYTE addressLowByte = fetch(mem);
+								BYTE result = mem[rw(mem, absoluteXAddressing(mem, littleEndianWord(addressLowByte, fetch(mem)), true), READ)]--;
+								setLoadFlags(result);
+								cycles--;
+							}
+							break;
+						case ins_dex:
+							{
+								reg_x--;
+								setLoadFlags(reg_x);
+								cycles--;
+							}
+							break;
+						case ins_dey:
+							{
+								reg_y--;
+								setLoadFlags(reg_y);
+								cycles--;
+							}
+							break;
 					}
 				}
 			}
@@ -889,8 +991,8 @@ namespace m6502 {
 			// compares a register with a value to set appropriate flags (0 cycles)
 			void compare(BYTE reg, BYTE input) {
 				reg -= input;
-				setLoadFlags(result);
-				fl_carry = (result <= input);
+				setLoadFlags(reg);
+				fl_carry = (reg <= input);
 			}
 
 			// transfers contents of a register to another
