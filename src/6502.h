@@ -144,14 +144,14 @@ namespace m6502 {
 			static constexpr BYTE ins_sbc_indx = 0xE1;	// indirect X SUBTRACT CARRY instruction (2 bytes, 6 cycles. Affects carry, zero, overflow and negative flags)
 			static constexpr BYTE ins_sbc_indy = 0xF1;	// indirect Y SUBTRACT CARRY instruction (2 bytes, 5-6 cycles. Affects carry, zero, overflow and negative flags)
 
-			static constexpr BYTE ins_cpm_im = 0xC9;	// immediate COMPARE A instruction (2 bytes, 2 cycles. Affects carry, zero and negative flags)
-			static constexpr BYTE ins_cpm_zp = 0xC5;	// zero-page COMPARE A instruction (2 bytes, 3 cycles. Affects carry, zero and negative flags)
-			static constexpr BYTE ins_cpm_zpx = 0xD5;	// zero-page X COMPARE A instruction (2 bytes, 4 cycles. Affects carry, zero and negative flags)
-			static constexpr BYTE ins_cpm_abs = 0xCD;	// absolute COMPARE A instruction (3 bytes, 4 cycles. Affects carry, zero and negative flags)
-			static constexpr BYTE ins_cpm_absx = 0xDD;	// absolute X COMPARE A instruction (3 bytes, 4-5 cycles. Affects carry, zero and negative flags)
-			static constexpr BYTE ins_cpm_aby = 0xD9;	// absolute Y COMPARE A instruction (3 bytes, 4-5 cycles. Affects carry, zero and negative flags)
-			static constexpr BYTE ins_cpm_indx = 0xC1;	// indirect X COMPARE A instruction (2 bytes, 6 cycles. Affects carry, zero and negative flags)
-			static constexpr BYTE ins_cpm_indy = 0xD1;	// indirect Y COMPARE A instruction (2 bytes, 5-6 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_cmp_im = 0xC9;	// immediate COMPARE A instruction (2 bytes, 2 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_cmp_zp = 0xC5;	// zero-page COMPARE A instruction (2 bytes, 3 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_cmp_zpx = 0xD5;	// zero-page X COMPARE A instruction (2 bytes, 4 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_cmp_abs = 0xCD;	// absolute COMPARE A instruction (3 bytes, 4 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_cmp_absx = 0xDD;	// absolute X COMPARE A instruction (3 bytes, 4-5 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_cmp_aby = 0xD9;	// absolute Y COMPARE A instruction (3 bytes, 4-5 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_cmp_indx = 0xC1;	// indirect X COMPARE A instruction (2 bytes, 6 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_cmp_indy = 0xD1;	// indirect Y COMPARE A instruction (2 bytes, 5-6 cycles. Affects carry, zero and negative flags)
 
 			static constexpr BYTE ins_cpx_im = 0xE0;	// immediate COMPARE X instruction (2 bytes, 2 cycles. Affects carry, zero and negative flags)
 			static constexpr BYTE ins_cpx_zp = 0xE4;	// zero-page COMPARE X instruction (2 bytes, 3 cycles. Affects carry, zero and negative flags)
@@ -682,6 +682,75 @@ namespace m6502 {
 								subtractSetFlags(reg_acc, rw(mem, indirectYAddressing(mem, fetch(mem)), READ));
 							}
 							break;
+						case ins_cmp_im:
+							{
+								compare(reg_acc, fetch(mem));
+							}
+							break;
+						case ins_cmp_zp:
+							{
+								compare(reg_acc, rw(mem, fetch(mem), READ));
+							}
+							break;
+						case ins_cmp_zpx:
+							{
+								compare(reg_acc, rw(mem, zeroPageXAddressing(cycles, fetch(mem)), READ));
+							}
+							break;
+						case ins_cmp_abs:
+							{
+								BYTE addressLowByte = fetch(mem);
+								compare(reg_acc, rw(mem, littleEndianWord(addressLowByte, fetch(mem)), READ));
+							}
+							break;
+						case ins_cmp_absx:
+							{
+								BYTE addressLowByte = fetch(mem);
+								compare(reg_acc, rw(mem, absoluteXAddressing(mem, littleEndianWord(addressLowByte, fetch(mem))), READ));
+							}
+							break;
+						case ins_cmp_indx:
+							{
+								compare(reg_acc, rw(mem, indirectXAddressing(cycles, mem, fetch(mem)), READ));
+							}
+							break;
+						case ins_cmp_indy:
+							{
+								compare(reg_acc, rw(mem, indirectYAddressing(mem, fetch(mem)), READ));
+							}
+							break;
+						case ins_cpx_im:
+							{
+								compare(reg_x, fetch(mem));
+							}
+							break;
+						case ins_cpx_zp:
+							{
+								compare(reg_x, rw(mem, fetch(mem), READ));
+							}
+							break;
+						case ins_cpx_abs:
+							{
+								BYTE addressLowByte = fetch(mem);
+								compare(reg_x, rw(mem, littleEndianWord(addressLowByte, fetch(mem)), READ));
+							}
+							break;
+						case ins_cpy_im:
+							{
+								compare(reg_y, fetch(mem));
+							}
+							break;
+						case ins_cpy_zp:
+							{
+								compare(reg_y, rw(mem, fetch(mem), READ));
+							}
+							break;
+						case ins_cpy_abs:
+							{
+								BYTE addressLowByte = fetch(mem);
+								compare(reg_y, rw(mem, littleEndianWord(addressLowByte, fetch(mem)), READ));
+							}
+							break;
 					}
 				}
 			}
@@ -806,7 +875,7 @@ namespace m6502 {
 				setLoadFlags(reg);
 			}
 
-			// subtracks a value from a register and sets appropriate flags (0 cycles)			
+			// subtracts a value from a register and sets appropriate flags (0 cycles)			
 			void subtractSetFlags(BYTE &reg, BYTE input) {
 				BYTE result = reg - input - (~fl_carry);
 				// sets the carry flag if no borrow was needed
@@ -815,6 +884,13 @@ namespace m6502 {
 				fl_oflow = ((reg ^ result) & ((255 - input) ^ result) & 0b10000000) > 0;
 				reg = result;
 				setLoadFlags(reg);
+			}
+
+			// compares a register with a value to set appropriate flags (0 cycles)
+			void compare(BYTE reg, BYTE input) {
+				reg -= input;
+				setLoadFlags(result);
+				fl_carry = (result <= input);
 			}
 
 			// transfers contents of a register to another
