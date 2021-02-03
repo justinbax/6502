@@ -68,7 +68,7 @@ class C : public testUnit {
 			}
 			assert(cycles == 0x00011000);
 			std::cout << "test unit C : first assert passed" << std::endl;
-			for (m6502::WORD i = 0; i < 0x6000; i++) {
+			for (m6502::WORD i = 0; i < 0x7000; i++) {
 				assert(mem[i] == 42);
 			}
 			std::cout << "test unit C : second asert passed" << std::endl;

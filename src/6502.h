@@ -50,10 +50,10 @@ namespace m6502 {
 			static constexpr BYTE ins_lda_im = 0xA9;	// immediate LOAD A instruction (2 cycles, 2 bytes. Affects zero and negative flags)
 			static constexpr BYTE ins_lda_zp = 0xA5;	// zero-page LOAD A instruction (3 cycles, 2 bytes. Affects zero and negative flags)
 			static constexpr BYTE ins_lda_zpx = 0xB5;	// zero-page X LOAD A instruction (4 cycles, 2 bytes. Affects zero and negative flags)
-			static constexpr BYTE ins_lda_abs = 0xAD; 	// absolute LOAD A instruction (4 cycles, 3 bytes. Affects zero and negative flags)
-			static constexpr BYTE ins_lda_absx = 0xBD; 	// absolute X LOAD A instruction (4-5 cycles, 3 bytes. Affects zero and negative flags)
-			static constexpr BYTE ins_lda_absy = 0xB9; 	// absolute Y LOAD A instruction (4-5 cycles, 3 bytes. Affects zero and negative flags)
-			static constexpr BYTE ins_lda_indx = 0xA1; 	// indirect X LOAD A instruction (6 cycles, 2 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_lda_abs = 0xAD;	// absolute LOAD A instruction (4 cycles, 3 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_lda_absx = 0xBD;	// absolute X LOAD A instruction (4-5 cycles, 3 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_lda_absy = 0xB9;	// absolute Y LOAD A instruction (4-5 cycles, 3 bytes. Affects zero and negative flags)
+			static constexpr BYTE ins_lda_indx = 0xA1;	// indirect X LOAD A instruction (6 cycles, 2 bytes. Affects zero and negative flags)
 			static constexpr BYTE ins_lda_indy = 0xB1;	// indirect Y LOAD A instruction (5-6 cycles, 2 bytes. Affects zero and negative flags)
 
 			static constexpr BYTE ins_ldx_im = 0xA2;	// immediate LOAD X instruction (2 cycles, 2 bytes. Affects zero and negative flags)
@@ -175,6 +175,34 @@ namespace m6502 {
 			static constexpr BYTE ins_dex = 0xCA;		// DECREMENT X instruction (1 byte, 2 cycles. Affects zero and negative flags)
 			static constexpr BYTE ins_dey = 0x88;		// DECREMENT Y instruction (1 byte, 2 cycles. Affects zero and negative flags)
 
+			static constexpr BYTE ins_asl_acc = 0x0A;	// A SHIFT LEFT instruction (1 byte, 2 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_asl_zp = 0x06;	// zero-page SHIFT LEFT instruction (2 bytes, 5 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_asl_zpx = 0x16;	// zero-page X SHIFT LEFT instruction (2 bytes, 6 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_asl_abs = 0x0E;	// absolute SHIFT LEFT instruction (3 bytes, 6 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_asl_absx = 0x1E;	// absolute X SHIFT LEFT instruction (3 bytes, 7 cycles. Affects carry, zero and negative flags)
+
+			static constexpr BYTE ins_lsr_acc = 0x4A;	// A SHIFT RIGHT instruction (1 byte, 2 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_lsr_zp = 0x46;	// zero-page SHIFT RIGHT instruction (2 bytes, 5 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_lsr_zpx = 0x56;	// zero-page X SHIFT RIGHT instruction (2 bytes, 6 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_lsr_abs = 0x4E;	// absolute SHIFT RIGHT instruction (3 bytes, 6 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_lsr_absx = 0x5E;	// absolute X SHIFT RIGHT instruction (3 bytes, 7 cycles. Affects carry, zero and negative flags)
+
+			static constexpr BYTE ins_rol_acc = 0x2A;	// A ROTATE LEFT instruction (1 byte, 2 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_rol_zp = 0x26;	// zero-page ROTATE LEFT instruction (2 bytes, 5 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_rol_zpx = 0x36;	// zero-page X ROTATE LEFT instruction (2 bytes, 6 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_rol_abs = 0x2E;	// absolute ROTATE LEFT instruction (3 bytes, 6 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_rol_absx = 0x3E;	// absolute X ROTATE LEFT instruction (3 bytes, 7 cycles. Affects carry, zero and negative flags)
+
+			static constexpr BYTE ins_ror_acc = 0x6A;	// A ROTATE RIGHT instruction (1 byte, 2 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_ror_zp = 0x66;	// zero-page ROTATE RIGHT instruction (2 bytes, 5 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_ror_zpx = 0x76;	// zero-page X ROTATE RIGHT instruction (2 bytes, 6 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_ror_abs = 0x6E;	// absolute ROTATE RIGHT instruction (3 bytes, 6 cycles. Affects carry, zero and negative flags)
+			static constexpr BYTE ins_ror_absx = 0x7E;	// absolute X ROTATE RIGHT instruction (3 bytes, 7 cycles. Affects carry, zero and negative flags)
+
+			static constexpr BYTE ins_jmp_abs = 0x4C;	// absolute JUMP instruction (3 bytes, 3 cycles. Does not affect any flag)
+			static constexpr BYTE ins_jmp_ind = 0x6C;	// indirect JUMP instruction (3 bytes, 5 cycles. Does not affect any flag)
+			static constexpr BYTE ins_jsr_abs = 0x20;	// absolute JUMP TO SUBROUTINE instruction (3 bytes, 6 cycles. Does not affect any flag)
+			static constexpr BYTE ins_rts = 0x60;		// RETURN FROM. SUBROUTINE instruction (1 byte, 6 cycles. Does not affect any flag)
 
 			// sends a reset signal to reset computer state (7 cycles)
 			void reset(uint32_t &cycles, MEMORY &mem) {
@@ -185,11 +213,11 @@ namespace m6502 {
 				fl_carry = fl_zero = fl_interr = fl_dec = fl_oflow = fl_neg = false;
 				reg_acc = reg_x = reg_y = 0;
 				// three fake stack accesses to set the stack pointer to 0xFDs
-				mem[reg_stackPointer | 0x0100];
+				rw(mem, reg_stackPointer | 0x0100, READ);
 				reg_stackPointer--;
-				mem[reg_stackPointer | 0x0100];
+				rw(mem, reg_stackPointer | 0x0100, READ);
 				reg_stackPointer--;
-				mem[reg_stackPointer | 0x0100];
+				rw(mem, reg_stackPointer | 0x0100, READ);
 				reg_stackPointer--;
 				// stores contents at 0xFFFC and 0xFFFD (little-endian) in program counter (contains location of reset routine)
 				reg_programCounter = littleEndianWord(rw(mem, 0xFFFC, READ), rw(mem, 0xFFFD, READ));
@@ -317,72 +345,72 @@ namespace m6502 {
 							break;
 						case ins_sta_zp:
 							{
-								mem[fetch(mem)] = reg_acc;
+								rw(mem, fetch(mem), WRITE, reg_acc);
 							}
 							break;
 						case ins_sta_zpx:
 							{
-								mem[zeroPageXAddressing(cycles, fetch(mem))] = reg_acc;
+								rw(mem, zeroPageXAddressing(cycles, fetch(mem)), WRITE, reg_acc);
 							}
 							break;
 						case ins_sta_abs:
 							{
 								BYTE addressLowByte = fetch(mem);
-								mem[littleEndianWord(addressLowByte, fetch(mem))] = reg_acc;
+								rw(mem, littleEndianWord(addressLowByte, fetch(mem)), WRITE, reg_acc);
 							}
 							break;
 						case ins_sta_absx:
 							{
 								BYTE addressLowByte = fetch(mem);
-								mem[absoluteXAddressing(mem, littleEndianWord(addressLowByte, fetch(mem)), true)] = reg_acc;
+								rw(mem, absoluteXAddressing(mem, littleEndianWord(addressLowByte, fetch(mem)), true), WRITE, reg_acc);
 							}
 							break;
 						case ins_sta_absy:
 							{
 								BYTE addressLowByte = fetch(mem);
-								mem[absoluteYAddressing(mem, littleEndianWord(addressLowByte, fetch(mem)), true)] = reg_acc;
+								rw(mem, absoluteYAddressing(mem, littleEndianWord(addressLowByte, fetch(mem)), true), WRITE, reg_acc);
 							}
 							break;
 						case ins_sta_indx:
 							{
-								mem[indirectXAddressing(cycles, mem, fetch(mem))] = reg_acc;
+								rw(mem, indirectXAddressing(cycles, mem, fetch(mem)), WRITE, reg_acc);
 							}
 							break;
 						case ins_sta_indy:
 							{
-								mem[indirectYAddressing(mem, fetch(mem), true)] = reg_acc;
+								rw(mem, indirectYAddressing(mem, fetch(mem), true), WRITE, reg_acc);
 							}
 							break;
 						case ins_stx_zp:
 							{
-								mem[fetch(mem)] = reg_x;
+								rw(mem, fetch(mem), WRITE, reg_x);
 							}
 							break;
 						case ins_stx_zpy:
 							{
-								mem[zeroPageYAddressing(cycles, fetch(mem))] = reg_x;
+								rw(mem, zeroPageYAddressing(cycles, fetch(mem)), WRITE, reg_x);
 							}
 							break;
 						case ins_stx_abs:
 							{
 								BYTE addressLowByte = fetch(mem);
-								mem[littleEndianWord(addressLowByte, fetch(mem))] = reg_x;
+								rw(mem, littleEndianWord(addressLowByte, fetch(mem)), WRITE, reg_x);
 							}
 							break;
 						case ins_sty_zp:
 							{
-								mem[fetch(mem)] = reg_y;
+								rw(mem, fetch(mem), WRITE, reg_y);
 							}
 							break;
 						case ins_sty_zpx:
 							{
-								mem[zeroPageXAddressing(cycles, fetch(mem))] = reg_y;
+								rw(mem, zeroPageXAddressing(cycles, fetch(mem)), WRITE, reg_y);
 							}
 							break;
 						case ins_sty_abs:
 							{
 								BYTE addressLowByte = fetch(mem);
-								mem[littleEndianWord(addressLowByte, fetch(mem))] = reg_y;
+								rw(mem, littleEndianWord(addressLowByte, fetch(mem)), WRITE, reg_y);
 							}
 							break;
 						case ins_tax:
@@ -853,6 +881,244 @@ namespace m6502 {
 								cycles--;
 							}
 							break;
+						case ins_asl_acc:
+							{
+								fl_carry = (reg_acc & 0b10000000 > 0);
+								reg_acc <<= 1;
+								cycles--;
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_asl_zp:
+							{
+								BYTE address = fetch(mem);
+								BYTE value = rw(mem, address, READ);
+								fl_carry = (value & 0b10000000 > 0);
+								value <<= 1;
+								cycles--;
+								rw(mem, address, WRITE, value);
+								setLoadFlags(value);
+							}
+							break;
+						case ins_asl_zpx:
+							{
+								BYTE address = zeroPageXAddressing(cycles, fetch(mem));
+								BYTE value = rw(mem, address, READ);
+								fl_carry = (value & 0b10000000 > 0);
+								value <<= 1;
+								cycles--;
+								rw(mem, address, WRITE, value);
+								setLoadFlags(value);
+							}
+							break;
+						case ins_asl_abs:
+							{
+								BYTE addressLowByte = fetch(mem);
+								BYTE address = littleEndianWord(addressLowByte, fetch(mem));
+								BYTE value = rw(mem, address, READ);
+								fl_carry = (value & 0b10000000 > 0);
+								value <<= 1;
+								cycles--;
+								rw(mem, address, WRITE, value);
+								setLoadFlags(value);
+							}
+							break;
+						case ins_asl_absx:
+							{
+								BYTE addressLowByte = fetch(mem);
+								BYTE address = absoluteXAddressing(mem, littleEndianWord(addressLowByte, fetch(mem)));
+								BYTE value = rw(mem, address, READ);
+								fl_carry = (value & 0b10000000 > 0);
+								value <<= 1;
+								cycles--;
+								rw(mem, address, WRITE, value);
+								setLoadFlags(value);
+							}
+							break;
+						case ins_lsr_acc:
+							{
+								fl_carry = (reg_acc & 0b00000001 > 0);
+								reg_acc >>= 1;
+								cycles--;
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_lsr_zp:
+							{
+								BYTE address = fetch(mem);
+								BYTE value = rw(mem, address, READ);
+								fl_carry = (value & 0b00000001 > 0);
+								value >>= 1;
+								cycles--;
+								rw(mem, address, WRITE, value);
+								setLoadFlags(value);
+							}
+							break;
+						case ins_lsr_zpx:
+							{
+								BYTE address = zeroPageXAddressing(cycles, fetch(mem));
+								BYTE value = rw(mem, address, READ);
+								fl_carry = (value & 0b00000001 > 0);
+								value >>= 1;
+								cycles--;
+								rw(mem, address, WRITE, value);
+								setLoadFlags(value);
+							}
+							break;
+						case ins_lsr_abs:
+							{
+								BYTE addressLowByte = fetch(mem);
+								BYTE address = littleEndianWord(addressLowByte, fetch(mem));
+								BYTE value = rw(mem, address, READ);
+								fl_carry = (value & 0b00000001 > 0);
+								value >>= 1;
+								cycles--;
+								rw(mem, address, WRITE, value);
+								setLoadFlags(value);
+							}
+							break;
+						case ins_lsr_absx:
+							{
+								BYTE addressLowByte = fetch(mem);
+								BYTE address = absoluteXAddressing(mem, littleEndianWord(addressLowByte, fetch(mem)));
+								BYTE value = rw(mem, address, READ);
+								fl_carry = (value & 0b00000001 > 0);
+								value >>= 1;
+								cycles--;
+								rw(mem, address, WRITE, value);
+								setLoadFlags(value);
+							}
+							break;
+						case ins_rol_acc:
+							{
+								bool carry = fl_carry;
+								fl_carry = (reg_acc & 0b10000000 > 0);
+								reg_acc <<= 1;
+								reg_acc += carry;
+								cycles--;
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_rol_zp:
+							{
+								bool carry = fl_carry;
+								BYTE address = fetch(mem);
+								BYTE value = rw(mem, address, READ);
+								fl_carry = (value & 0b10000000 > 0);
+								value <<= 1;
+								value += carry;
+								cycles--;
+								setLoadFlags(value);
+								rw(mem, address, WRITE, value);
+							}
+							break;
+						case ins_rol_zpx:
+							{
+								bool carry = fl_carry;
+
+								BYTE address = zeroPageXAddressing(cycles, fetch(mem));
+								BYTE value = rw(mem, address, READ);
+								fl_carry = (value & 0b10000000 > 0);
+
+								value <<= 1;
+								value += carry;
+								cycles--;
+								setLoadFlags(value);
+								rw(mem, address, WRITE, value);
+							}
+							break;
+						case ins_rol_abs:
+							{
+								bool carry = fl_carry;
+								BYTE addressLowByte = fetch(mem);
+								BYTE address = littleEndianWord(addressLowByte, fetch(mem));
+								BYTE value = rw(mem, address, READ);
+								fl_carry = (value & 0b10000000 > 0);
+								value <<= 1;
+								value += carry;
+								cycles--;
+								setLoadFlags(value);
+								rw(mem, address, WRITE, value);
+							}
+							break;
+						case ins_rol_absx:
+							{
+								bool carry = fl_carry;
+								BYTE addressLowByte = fetch(mem);
+								BYTE address = absoluteXAddressing(mem, littleEndianWord(addressLowByte, fetch(mem)));
+								BYTE value = rw(mem, address, READ);
+								fl_carry = (value & 0b10000000 > 0);
+								value <<= 1;
+								value += carry;
+								cycles--;
+								setLoadFlags(value);
+								rw(mem, address, WRITE, value);
+							}
+							break;
+						case ins_ror_acc:
+							{
+								bool carry = fl_carry;
+								fl_carry = (reg_acc & 0b00000001 > 0);
+								reg_acc >>= 1;
+								reg_acc |= (carry ? 0b10000000 : 0);
+								cycles--;
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_ror_zp:
+							{
+								bool carry = fl_carry;
+								BYTE address = fetch(mem);
+								BYTE value = rw(mem, address, READ);
+								fl_carry = (value & 0b00000001 > 0);
+								value >>= 1;
+								value |= (carry ? 0b10000000 : 0);
+								cycles--;
+								rw(mem, address, WRITE, value);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_ror_zpx:
+							{
+								bool carry = fl_carry;
+								BYTE address = zeroPageXAddressing(cycles, fetch(mem));
+								BYTE value = rw(mem, address, READ);
+								fl_carry = (value & 0b00000001 > 0);
+								value >>= 1;
+								value |= (carry ? 0b10000000 : 0);
+								cycles--;
+								rw(mem, address, WRITE, value);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_ror_abs:
+							{
+								bool carry = fl_carry;
+								BYTE addressLowByte = fetch(mem);
+								BYTE address = littleEndianWord(addressLowByte, fetch(mem));
+								BYTE value = rw(mem, address, READ);
+								fl_carry = (value & 0b00000001 > 0);
+								value >>= 1;
+								value |= (carry ? 0b10000000 : 0);
+								cycles--;
+								rw(mem, address, WRITE, value);
+								setLoadFlags(reg_acc);
+							}
+							break;
+						case ins_ror_absx:
+							{
+								bool carry = fl_carry;
+								BYTE addressLowByte = fetch(mem);
+								BYTE address = absoluteXAddressing(mem, littleEndianWord(addressLowByte, fetch(mem)));
+								BYTE value = rw(mem, address, READ);
+								fl_carry = (value & 0b00000001 > 0);
+								value >>= 1;
+								value |= (carry ? 0b10000000 : 0);
+								cycles--;
+								rw(mem, address, WRITE, value);
+								setLoadFlags(reg_acc);
+							}
+							break;
 					}
 				}
 			}
@@ -874,7 +1140,7 @@ namespace m6502 {
 
 			// reads and returns next byte at programCounter. Increments programCounter (1 cycle)
 			BYTE fetch(MEMORY &mem) {
-				BYTE data = mem[reg_programCounter];
+				BYTE data = rw(mem, reg_programCounter, READ);
 				reg_programCounter++;
 				return data;
 			}
@@ -893,7 +1159,7 @@ namespace m6502 {
 
 			// pushes value to stack (address reg_stackPointer | 0x0100) and increments stack pointer (2 cycles)
 			BYTE pushStack(uint32_t &cycles, MEMORY &mem, BYTE value) {
-				mem[reg_stackPointer | 0x0100] = value;
+				rw(mem, reg_stackPointer | 0x0100, WRITE, value);
 				reg_stackPointer--;
 				cycles--;
 				return value;
@@ -901,7 +1167,7 @@ namespace m6502 {
 
 			// pulls and returns value from stack (address reg_stackPointer | 0x0100) and decrements stack pointer (2 cycles)
 			BYTE pullStack(uint32_t &cycles, MEMORY &mem) {
-				BYTE value = mem[reg_stackPointer | 0x0100];
+				BYTE value = rw(mem, reg_stackPointer | 0x0100, READ);
 				reg_stackPointer++;
 				cycles--;
 				return value;
@@ -924,7 +1190,7 @@ namespace m6502 {
 				address += reg_x;
 				if ((address & 0x00ff) < reg_x || extraCycle) {
 					// extra cycle when page boundary is crossed
-					mem[address];
+					rw(mem, address, READ);
 				}
 				return address;
 			}
@@ -934,7 +1200,7 @@ namespace m6502 {
 				address += reg_y;
 				if ((address & 0x00ff) < reg_y || extraCycle) {
 					// extra cycle when page boundary is crossed
-					mem[address];
+					rw(mem, address, READ);
 				}
 				return address;
 			}
@@ -951,12 +1217,12 @@ namespace m6502 {
 			// returns effective address of indirect Y (indirect indexed) addressing more (3 cycles in case of page cross, 2 otherwise)
 			WORD indirectYAddressing(MEMORY &mem, BYTE address, bool extraCycle = false) {
 				BYTE lowByte = rw(mem, address, READ);
-				address++; // ISSUE : 
+				address++;
 				WORD effectiveAddress = littleEndianWord(lowByte, rw(mem, address, READ));
 				effectiveAddress += reg_y;
 				if ((effectiveAddress & 0x00ff) < reg_y || extraCycle) {
 					// extra cycle when page boundary is crossed
-					mem[effectiveAddress];
+					rw(mem, effectiveAddress, READ);
 				}
 				return effectiveAddress;
 			}
