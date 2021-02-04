@@ -2,7 +2,10 @@
 #define _6502_H
 
 #include <iostream>
+#include <iomanip>
 #include <vector>
+#include <thread>
+#include <chrono>
 
 namespace m6502 {
 
@@ -23,6 +26,7 @@ namespace m6502 {
 				for (WORD i = 0; i < MAX_MEM; i++) {
 					data[i] = 0;
 				}
+				data[MAX_MEM] = 0;
 				cycles = nCycles;
 			}
 
@@ -31,6 +35,7 @@ namespace m6502 {
 				for (WORD i = 0; i < nData.size(); i++) {
 					data[i] = nData[i];
 					if (i == MAX_MEM) {
+						data[i] = nData[i];
 						break;
 					}
 				}
@@ -241,14 +246,14 @@ namespace m6502 {
 				rw(mem, reg_stackPointer | 0x0100, READ);
 				reg_stackPointer--;
 				// stores contents at 0xFFFC and 0xFFFD (little-endian) in program counter (contains location of reset routine)
-				reg_programCounter = littleEndianWord(rw(mem, 0xFFFC, READ), rw(mem, 0xFFFD, READ));
+				BYTE programCounterLowByte = rw(mem, 0xFFFC, READ);
+				reg_programCounter = littleEndianWord(programCounterLowByte, rw(mem, 0xFFFD, READ));
 			}
 
 			// executes instructions at programCounter while cycles is greater than 0
 			void execute(uint32_t &cycles, MEMORY &mem) {
-				while (cycles > 0) {
+				while (cycles > 0 && cycles < 0xFA) {
 					BYTE instruction = fetch(mem);
-					std::cout << std::hex << (int)(instruction) << "   (address " << reg_programCounter << ")" << std::endl;
 					switch (instruction) {
 						case ins_lda_im:
 							{
@@ -1279,9 +1284,9 @@ namespace m6502 {
 								cycles--;
 								cycles--;
 								// pushes program counter and status flags on the stack
-								rw(mem, reg_stackPointer | 0x0100, WRITE, (reg_programCounter + 1) & 0b11110000);
+								rw(mem, reg_stackPointer | 0x0100, WRITE, (reg_programCounter + 1) >> 8);
 								reg_stackPointer--;
-								rw(mem, reg_stackPointer | 0x0100, WRITE, (reg_programCounter + 1) & 0b00001111);
+								rw(mem, reg_stackPointer | 0x0100, WRITE, (reg_programCounter + 1) & 0xFF);
 								reg_stackPointer--;
 								rw(mem, reg_stackPointer | 0x0100, WRITE, (fl_carry | fl_zero << 1 | fl_interr << 2 | fl_dec << 3 | 0b00110000 | fl_oflow << 6 | fl_neg << 7));
 								// stores contents of 0xFFFE and 0xFFFF in the program counter
@@ -1344,9 +1349,11 @@ namespace m6502 {
 				BYTE value;
 				if (rw == READ) {
 					value = mem[address];
+					std::cout << std::hex << std::setw(4) << address << " r " << std::setw(2) << (int)value << std::endl;
 				} else {
 					mem[address] = data;
 					value = data;
+					std::cout << std::hex << std::setw(4) << address << " W " << std::setw(2) << (int)value << std::endl;
 				}
 				return value;
 			}
