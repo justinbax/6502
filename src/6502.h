@@ -1119,6 +1119,41 @@ namespace m6502 {
 								setLoadFlags(reg_acc);
 							}
 							break;
+						case ins_jmp_abs:
+							{
+								BYTE addressLowByte = fetch(mem);
+								reg_programCounter = littleEndianWord(addressLowByte, fetch(mem));
+							}
+							break;
+						case ins_jmp_ind:
+							{
+								// on an original 6502, indirect addressing on a page boundary (first byte on 0xxxFF) results in the effective address being taken from FF of that page and 00 of the same page, and not 00 of the next page
+								BYTE addressLowByte = fetch(mem);
+								BYTE addressHighByte = fetch(mem);
+								BYTE effectiveAddressLowByte = rw(mem, addressLowByte | (WORD)(addressHighByte << 8), READ);
+								reg_programCounter = littleEndianWord(effectiveAddressLowByte, rw(mem, addressLowByte | (WORD)(addressHighByte++ << 8), READ));
+							}
+							break;
+						case ins_jsr_abs:
+							{
+								BYTE addressLowByte = fetch(mem);
+								BYTE addressHighByte = fetch(mem);
+								pushStack(cycles, mem, (reg_stackPointer + 1) & 0b11110000);
+								pushStack(cycles, mem, (reg_stackPointer + 1) & 0b00001111);
+								reg_stackPointer = littleEndianWord(addressLowByte, addressHighByte);
+								// for some reason the 6502 manages to do the instruction in 6 cycles, yet this does it in 7, to incrementing the cycle count
+								cycles++;
+							}
+							break;
+						case ins_rts:
+							{
+								BYTE addressLowByte = pullStack(cycles, mem);
+								reg_stackPointer = littleEndianWord(addressLowByte, pullStack(cycles, mem));
+								reg_stackPointer++;
+								// extra cycle to arrive at 6 cycles
+								cycles--;
+							}
+							break;
 					}
 				}
 			}
