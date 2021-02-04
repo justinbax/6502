@@ -248,6 +248,7 @@ namespace m6502 {
 			void execute(uint32_t &cycles, MEMORY &mem) {
 				while (cycles > 0) {
 					BYTE instruction = fetch(mem);
+					std::cout << std::hex << (int)(instruction) << "   (address " << reg_programCounter << ")" << std::endl;
 					switch (instruction) {
 						case ins_lda_im:
 							{
@@ -816,90 +817,113 @@ namespace m6502 {
 							break;
 						case ins_inc_zp:
 							{
-								BYTE result = mem[rw(mem, fetch(mem), READ)]++;
-								setLoadFlags(result);
+								BYTE address = fetch(mem);
+								BYTE value = rw(mem, address, READ);
+								value++;
 								cycles--;
+								rw(mem, address, WRITE, value);
+								setLoadFlags(value);
 							}
 							break;
 						case ins_inc_zpx:
 							{
-								BYTE result = mem[rw(mem, zeroPageXAddressing(cycles, fetch(mem)), READ)]++;
-								setLoadFlags(result);
+								BYTE address = zeroPageXAddressing(cycles, fetch(mem));
+								BYTE value = rw(mem, address, READ);
+								value++;
 								cycles--;
+								rw(mem, address, WRITE, value);
+								setLoadFlags(value);
 							}
 							break;
 						case ins_inc_abs:
 							{
 								BYTE addressLowByte = fetch(mem);
-								BYTE result = mem[rw(mem, littleEndianWord(addressLowByte, fetch(mem)), READ)]++;
-								setLoadFlags(result);
+								BYTE address = littleEndianWord(addressLowByte, fetch(mem));
+								BYTE value = rw(mem, address, READ);
+								value++;
 								cycles--;
+								rw(mem, address, WRITE, value);
+								setLoadFlags(value);
 							}
 							break;
 						case ins_inc_absx:
 							{
 								BYTE addressLowByte = fetch(mem);
-								BYTE result = mem[rw(mem, absoluteXAddressing(mem, littleEndianWord(addressLowByte, fetch(mem)), true), READ)]++;
-								setLoadFlags(result);
+								BYTE address = absoluteXAddressing(mem, littleEndianWord(addressLowByte, fetch(mem)), true);
+								BYTE value = rw(mem, address, READ);
+								value++;
 								cycles--;
+								rw(mem, address, WRITE, value);
+								setLoadFlags(value);
 							}
 							break;
 						case ins_inx:
 							{
 								reg_x++;
-								setLoadFlags(reg_x);
 								cycles--;
+								setLoadFlags(reg_x);
 							}
 							break;
 						case ins_iny:
 							{
-								reg_y++;
+								reg_y++;cycles--;
 								setLoadFlags(reg_y);
-								cycles--;
 							}
 							break;
 						case ins_dec_zp:
 							{
-								BYTE result = mem[rw(mem, fetch(mem), READ)]--;
-								setLoadFlags(result);
+								BYTE address = fetch(mem);
+								BYTE value = rw(mem, address, READ);
+								value--;
 								cycles--;
+								rw(mem, address, WRITE, value);
+								setLoadFlags(value);
 							}
 							break;
 						case ins_dec_zpx:
 							{
-								BYTE result = mem[rw(mem, zeroPageXAddressing(cycles, fetch(mem)), READ)]--;
-								setLoadFlags(result);
+								BYTE address = zeroPageXAddressing(cycles, fetch(mem));
+								BYTE value = rw(mem, address, READ);
+								value--;
 								cycles--;
+								rw(mem, address, WRITE, value);
+								setLoadFlags(value);
 							}
 							break;
 						case ins_dec_abs:
 							{
 								BYTE addressLowByte = fetch(mem);
-								BYTE result = mem[rw(mem, littleEndianWord(addressLowByte, fetch(mem)), READ)]--;
-								setLoadFlags(result);
+								BYTE address = littleEndianWord(addressLowByte, fetch(mem));
+								BYTE value = rw(mem, address, READ);
+								value--;
 								cycles--;
+								rw(mem, address, WRITE, value);
+								setLoadFlags(value);
 							}
 							break;
 						case ins_dec_absx:
 							{
 								BYTE addressLowByte = fetch(mem);
-								BYTE result = mem[rw(mem, absoluteXAddressing(mem, littleEndianWord(addressLowByte, fetch(mem)), true), READ)]--;
-								setLoadFlags(result);
+								BYTE address = absoluteXAddressing(mem, littleEndianWord(addressLowByte, fetch(mem)), true);
+								BYTE value = rw(mem, address, READ);
+								value--;
 								cycles--;
+								rw(mem, address, WRITE, value);
+								setLoadFlags(value);
 							}
 							break;
 						case ins_dex:
 							{
 								reg_x--;
-								setLoadFlags(reg_x);
 								cycles--;
+								setLoadFlags(reg_x);
 							}
 							break;
 						case ins_dey:
 							{
 								reg_y--;
-								setLoadFlags(reg_y);
 								cycles--;
+								setLoadFlags(reg_y);
 							}
 							break;
 						case ins_asl_acc:
@@ -1449,7 +1473,9 @@ namespace m6502 {
 						// extra cycle if page is crossed
 						cycles--;
 					}
+					return true;
 				}
+				return false;
 			}
 
 			// returns a low endian word formed from two bytes
