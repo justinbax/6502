@@ -204,6 +204,27 @@ namespace m6502 {
 			static constexpr BYTE ins_jsr_abs = 0x20;	// absolute JUMP TO SUBROUTINE instruction (3 bytes, 6 cycles. Does not affect any flag)
 			static constexpr BYTE ins_rts = 0x60;		// RETURN FROM. SUBROUTINE instruction (1 byte, 6 cycles. Does not affect any flag)
 
+			static constexpr BYTE ins_bcc = 0x90;		// BRANCH IF CARRY CLEAR instruction (2 bytes, 2-4 cycles. Does not affect any flag)
+			static constexpr BYTE ins_bcs = 0xB0;		// BRANCH IF CARRY SET instruction (2 bytes, 2-4 cycles. Does not affect any flag)
+			static constexpr BYTE ins_beq = 0xF0;		// BRANCH IF EQUAL instruction (2 bytes, 2-4 cycles. Does not affect any flag)
+			static constexpr BYTE ins_bmi = 0x30;		// BRANCH IF MINUS instruction (2 bytes, 2-4 cycles. Does not affect any flag)
+			static constexpr BYTE ins_bne = 0xD0;		// BRANCH IF NOT EQUAL instruction (2 bytes, 2-4 cycles. Does not affect any flag)
+			static constexpr BYTE ins_bpl = 0x10;		// BRANCH IF POSITIVE instruction (2 bytes, 2-4 cycles. Does not affect any flag)
+			static constexpr BYTE ins_bvc = 0x50;		// BRANCH IF OVERFLOW CLEAR instruction (2 bytes, 2-4 cycles. Does not affect any flag)
+			static constexpr BYTE ins_bvs = 0x70;		// BRANCH IF OVERFLOW SET instruction (2 bytes, 2-4 cycles. Does not affect any flag)
+			
+			static constexpr BYTE ins_clc = 0x18;		// CLEAR CARRY instruction (1 byte, 2 cycles. Affects carry flag)
+			static constexpr BYTE ins_cld = 0xD8;		// CLEAR DECIMAL instruction (1 byte, 2 cycles. Affects decimal flag)
+			static constexpr BYTE ins_cli = 0x58;		// CLEAR INTERRUPT DISABLE instruction (1 byte, 2 cycles. Affects interrupt flag)
+			static constexpr BYTE ins_clv = 0xB8;		// CLEAR OVERFLOW instruction (1 byte, 2 cycles. Affects overflow flag)
+			static constexpr BYTE ins_sec = 0x38;		// SET CARRY instruction (1 byte, 2 cycles. Affects carry flag)
+			static constexpr BYTE ins_sed = 0xF8;		// SET DECIMAL instruction (1 byte, 2 cycles. Affects decimal flag)
+			static constexpr BYTE ins_sei = 0x78;		// SET INTERRUPT DISABLE instruction (1 byte, 2 cycles. Affects interrupt flag)
+
+			static constexpr BYTE ins_brk = 0x00;		// BREAK instruction (2 bytes, 7 cycles. Does not affect any flag)
+			static constexpr BYTE ins_nop = 0xEA;		// NO OPERATION instruction (1 byte, 2 cycles. Does not affect any flag)
+			static constexpr BYTE ins_rti = 0x40;		// RETURN FROM INTERRUPT instruction (1 byte, 6 cycles. Affects all flags)
+
 			// sends a reset signal to reset computer state (7 cycles)
 			void reset(uint32_t &cycles, MEMORY &mem) {
 				reg_programCounter = 0x0000;
@@ -1154,6 +1175,120 @@ namespace m6502 {
 								cycles--;
 							}
 							break;
+						case ins_bcc:
+							{
+								branch(cycles, fetch(mem), fl_carry, false);
+							}
+							break;
+						case ins_bcs:
+							{
+								branch(cycles, fetch(mem), fl_carry, true);
+							}
+							break;
+						case ins_beq:
+							{
+								branch(cycles, fetch(mem), fl_zero, true);
+							}
+							break;
+						case ins_bmi:
+							{
+								branch(cycles, fetch(mem), fl_neg, true);
+							}
+							break;
+						case ins_bne:
+							{
+								branch(cycles, fetch(mem), fl_zero, false);
+							}
+							break;
+						case ins_bpl:
+							{
+								branch(cycles, fetch(mem), fl_neg, false);
+							}
+							break;
+						case ins_bvc:
+							{
+								branch(cycles, fetch(mem), fl_oflow, false);
+							}
+							break;
+						case ins_bvs:
+							{
+								branch(cycles, fetch(mem), fl_oflow, true);
+							}
+							break;
+						case ins_clc:
+							{
+								fl_carry = false;
+							}
+							break;
+						case ins_cld:
+							{
+								fl_dec = false;
+							}
+							break;
+						case ins_cli:
+							{
+								fl_interr = false;
+							}
+							break;
+						case ins_clv:
+							{
+								fl_oflow = false;
+							}
+							break;
+						case ins_sec:
+							{
+								fl_carry = true;
+							}
+							break;
+						case ins_sed:
+							{
+								fl_dec = true;
+							}
+							break;
+						case ins_sei:
+							{
+								fl_interr = true;
+							}
+							break;
+						case ins_brk:
+							{
+								cycles--;
+								cycles--;
+								// pushes program counter and status flags on the stack
+								rw(mem, reg_stackPointer | 0x0100, WRITE, (reg_programCounter + 1) & 0b11110000);
+								reg_stackPointer--;
+								rw(mem, reg_stackPointer | 0x0100, WRITE, (reg_programCounter + 1) & 0b00001111);
+								reg_stackPointer--;
+								rw(mem, reg_stackPointer | 0x0100, WRITE, (fl_carry | fl_zero << 1 | fl_interr << 2 | fl_dec << 3 | 0b00110000 | fl_oflow << 6 | fl_neg << 7));
+								// stores contents of 0xFFFE and 0xFFFF in the program counter
+								BYTE programCounterLowByte = rw(mem, 0xFFFE, READ);
+								reg_programCounter = littleEndianWord(programCounterLowByte, rw(mem, 0xFFFF, READ));
+							}
+							break;
+						case ins_nop:
+							{
+								cycles--;
+							}
+							break;
+						case ins_rti:
+							{
+								cycles--;
+								cycles--;
+								cycles--;
+								// sets program counter and status flags from stack
+								BYTE flags = rw(mem, reg_stackPointer | 0x0100, READ);
+								reg_stackPointer++;
+								fl_carry = (flags & 0b00000001);
+								fl_zero = (flags & 0b00000010);
+								fl_interr = (flags & 0b00000100);
+								fl_dec = (flags & 0b00001000);
+								fl_oflow = (flags &0b01000000);
+								fl_neg = (flags & 0b10000000);
+								BYTE programCounterLowByte = rw(mem, reg_stackPointer | 0x0100, READ);
+								reg_stackPointer++;
+								reg_programCounter = littleEndianWord(programCounterLowByte, rw(mem, reg_stackPointer | 0x0100, READ));
+								reg_stackPointer++;
+							}
 					}
 				}
 			}
@@ -1296,10 +1431,25 @@ namespace m6502 {
 				fl_carry = (reg <= input);
 			}
 
-			// transfers contents of a register to another
+			// transfers contents of a register to another (1 cycle)
 			void transfer(uint32_t &cycles, BYTE firstReg, BYTE &secondReg) {
 				secondReg = firstReg;
 				cycles--;
+			}
+
+			// branches program counter to a new relative location if condition is met (0-2 cycles)
+			bool branch(uint32_t &cycles, BYTE offset, bool flag, bool condition) {
+				if (flag == condition) {
+					BYTE oldPage = reg_programCounter >> 8;
+					// unsigned to signed integer with convertion to two's complement if highest bit is set
+					offset = (offset & 0b10000000 > 0 ? offset - 256 : offset);
+					reg_programCounter += offset;
+					cycles--;
+					if (oldPage != (reg_programCounter >> 8)) {
+						// extra cycle if page is crossed
+						cycles--;
+					}
+				}
 			}
 
 			// returns a low endian word formed from two bytes
