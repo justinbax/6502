@@ -2,9 +2,30 @@
 
 #include "../6502.h"
 
-namespace m6502 {
-
-} // namespace m6502
+std::vector<m6502::BYTE> constructProgram(std::vector<m6502::BYTE> program, std::vector<m6502::BYTE> zp) {
+	std::vector<m6502::BYTE> data;
+	for (m6502::WORD i = 0; i < 0xFFFF; i++) {
+		data.push_back(0xEA);
+	}
+	data.push_back(0xEA);
+	data[0xFFFC] = 0x00;
+	data[0xFFFD] = 0x20;
+	data[0xFFFE] = 0x00;
+	data[0xFFFF] = 0xFF;
+	for (m6502::BYTE i = 0x00; i < zp.size(); i++) {
+		data[i] = zp[i];
+		if (i = 0xFF) {
+			break;
+		}
+	}
+	for (m6502::WORD i = 0x2000; i < program.size() + 0x2000; i++) {
+		if (i == 0xFF00) {
+			break;
+		}
+		data[i] = program[i - 0x2000];
+	}
+	return data;
+}
 
 // base class for test units
 class testUnit {
@@ -12,7 +33,7 @@ class testUnit {
 		testUnit() {
 			mem.init(&cycles);
 			cpu.reset(cycles, mem);
-			cycles = 0x0001ffff;
+			cycles = 0x0001FFFF;
 		}
 
 		// start the test unit
@@ -31,7 +52,7 @@ class A : public testUnit {
 	public:
 		void test() {
 			std::cout << "test unit A started" << std::endl;
-			for (int i = 0; i < 0xffff; i++) {
+			for (int i = 0; i < 0xFFFF; i++) {
 				assert(mem[i] == 0);
 			}
 			std::cout << "test unit A : first assert passed" << std::endl;
@@ -60,7 +81,7 @@ class C : public testUnit {
 		void test() {
 			std::cout << "test unit C started" << std::endl;
 			m6502::BYTE data;
-			for (m6502::WORD i = 0; i < 0x7fff; i++) {
+			for (m6502::WORD i = 0; i < 0x7FFF; i++) {
 				data = mem[i];
 			}
 			for (m6502::WORD i = 0; i < 0x7000; i++) {
@@ -93,19 +114,69 @@ class D : public testUnit {
 class E : public testUnit {
 	public:
 		void test() {
-			std::cout << "test D started" << std::endl;
+			std::cout << "test E started" << std::endl;
 			mem[0xFFFC] = 0xAD;
 			mem[0xFFFD] = 0xDE;
 			cpu.reset(cycles, mem);
 			assert(cycles == 0x0001fff6);
-			std::cout << "test D : first assert passed" << std::endl;
+			std::cout << "test E : first assert passed" << std::endl;
 			assert(cpu.reg_stackPointer == 0xFD);
-			std::cout << "test D : second assert passed" << std::endl;
+			std::cout << "test E : second assert passed" << std::endl;
 			assert(cpu.reg_programCounter == 0xDEAD);
-			std::cout << "test D : third assert passed" << std::endl;
-			std::cout << "test D completed" << std::endl;
+			std::cout << "test E : third assert passed" << std::endl;
+			std::cout << "test E completed" << std::endl;
 		}
 }; // class E : public testUnit
+
+// test unit for zero-page x, zero-page y, absolute x and y addressing
+class F : public testUnit {
+	public:
+		void test() {
+			std::cout << "test F started" << std::endl;
+			cpu.reg_programCounter = 0x2000;
+			cpu.reg_x = 0x33;
+			cpu.reg_y = 0xF0;
+			assert(cpu.zeroPageXAddressing(cycles, 0xE0) == 0x0013);
+			std::cout << "test F : first assert passed" << std::endl;
+			assert(cpu.absoluteXAddressing(mem, 0xF044) == 0xF077);
+			std::cout << "test F : second assert passed" << std::endl;
+			assert(cpu.absoluteYAddressing(mem, 0x4321) == 0x4411);
+			std::cout << "test F : third assert passed" << std::endl;
+			assert(cycles == 0x0001FFFD);
+			std::cout << "test F completed" << std::endl;
+		}
+}; // class F : public testUnit
+
+// test unit for indirect x and indirect y addressing
+class G : public testUnit {
+	public:
+		void test() {
+			std::cout << "test G started" << std::endl;
+			cpu.reg_programCounter = 0x2000;
+			cpu.reg_x = 0x21;
+			cpu.reg_y = 0xF0;
+			mem[0x42] = 0xAD;
+			mem[0x43] = 0xDE;
+			assert(cpu.indirectXAddressing(cycles, mem, 0x21) == 0xDEAD);
+			std::cout << "test G : first assert passed" << std::endl;
+			mem[0xAA] = 0xAB;
+			mem[0xAB] = 0xCD;
+			assert(cpu.indirectYAddressing(mem, 0xAA) == 0xCE9B);
+			std::cout << "test G : second assert passed" << std::endl;
+			assert(cycles == 0x0001FFEF);
+			std::cout << "test G : third assert passed" << std::endl;
+			std::cout << "test G completed" << std::endl;
+		}
+}; // class G : public testUnit
+
+
+class H : public testUnit {
+	public:
+		void test() {
+			std::cout << "test H started" << std::endl;
+			std::cout << "test H completed" << std::endl;
+		}
+}; // class H : public testUnit
 
 int main() {
 	A a;
@@ -113,10 +184,12 @@ int main() {
 	C c;
 	D d;
 	E e;
+	F f;
 	a.test();
 	b.test();
 	c.test();
 	d.test();
 	e.test();
+	f.test();
 	return 0;
 }
