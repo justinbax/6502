@@ -207,7 +207,7 @@ namespace m6502 {
 			static constexpr BYTE ins_jmp_abs = 0x4C;	// absolute JUMP instruction (3 bytes, 3 cycles. Does not affect any flag)
 			static constexpr BYTE ins_jmp_ind = 0x6C;	// indirect JUMP instruction (3 bytes, 5 cycles. Does not affect any flag)
 			static constexpr BYTE ins_jsr_abs = 0x20;	// absolute JUMP TO SUBROUTINE instruction (3 bytes, 6 cycles. Does not affect any flag)
-			static constexpr BYTE ins_rts = 0x60;		// RETURN FROM. SUBROUTINE instruction (1 byte, 6 cycles. Does not affect any flag)
+			static constexpr BYTE ins_rts = 0x60;		// RETURN FROM SUBROUTINE instruction (1 byte, 6 cycles. Does not affect any flag)
 
 			static constexpr BYTE ins_bcc = 0x90;		// BRANCH IF CARRY CLEAR instruction (2 bytes, 2-4 cycles. Does not affect any flag)
 			static constexpr BYTE ins_bcs = 0xB0;		// BRANCH IF CARRY SET instruction (2 bytes, 2-4 cycles. Does not affect any flag)
@@ -252,7 +252,7 @@ namespace m6502 {
 
 			// executes instructions at programCounter while cycles is greater than 0
 			void execute(uint32_t &cycles, MEMORY &mem) {
-				while (cycles > 0 && cycles < 0xFA) {
+				while (cycles > 0 && cycles < 0xFFFFFFFA) {
 					BYTE instruction = fetch(mem);
 					switch (instruction) {
 						case ins_lda_im:
@@ -1188,9 +1188,9 @@ namespace m6502 {
 							{
 								BYTE addressLowByte = fetch(mem);
 								BYTE addressHighByte = fetch(mem);
-								pushStack(cycles, mem, (reg_stackPointer + 1) & 0b11110000);
-								pushStack(cycles, mem, (reg_stackPointer + 1) & 0b00001111);
-								reg_stackPointer = littleEndianWord(addressLowByte, addressHighByte);
+								pushStack(cycles, mem, reg_programCounter >> 8);
+								pushStack(cycles, mem, reg_programCounter & 0xFF);
+								reg_programCounter = littleEndianWord(addressLowByte, addressHighByte);
 								// for some reason the 6502 manages to do the instruction in 6 cycles, yet this does it in 7, to incrementing the cycle count
 								cycles++;
 							}
@@ -1198,7 +1198,7 @@ namespace m6502 {
 						case ins_rts:
 							{
 								BYTE addressLowByte = pullStack(cycles, mem);
-								reg_stackPointer = littleEndianWord(addressLowByte, pullStack(cycles, mem));
+								reg_programCounter = littleEndianWord(addressLowByte, pullStack(cycles, mem));
 								reg_stackPointer++;
 								// extra cycle to arrive at 6 cycles
 								cycles--;
@@ -1289,9 +1289,9 @@ namespace m6502 {
 								rw(mem, reg_stackPointer | 0x0100, WRITE, (reg_programCounter + 1) & 0xFF);
 								reg_stackPointer--;
 								rw(mem, reg_stackPointer | 0x0100, WRITE, (fl_carry | fl_zero << 1 | fl_interr << 2 | fl_dec << 3 | 0b00110000 | fl_oflow << 6 | fl_neg << 7));
+								reg_stackPointer--;
 								// stores contents of 0xFFFE and 0xFFFF in the program counter
-								BYTE programCounterLowByte = rw(mem, 0xFFFE, READ);
-								reg_programCounter = littleEndianWord(programCounterLowByte, rw(mem, 0xFFFF, READ));
+								reg_programCounter = littleEndianWord(rw(mem, 0xFFFE, READ), rw(mem, 0xFFFF, READ));
 							}
 							break;
 						case ins_nop:
@@ -1319,6 +1319,7 @@ namespace m6502 {
 								reg_stackPointer++;
 							}
 					}
+					std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 				}
 			}
 
@@ -1368,8 +1369,8 @@ namespace m6502 {
 
 			// pulls and returns value from stack (address reg_stackPointer | 0x0100) and decrements stack pointer (2 cycles)
 			BYTE pullStack(uint32_t &cycles, MEMORY &mem) {
-				BYTE value = rw(mem, reg_stackPointer | 0x0100, READ);
 				reg_stackPointer++;
+				BYTE value = rw(mem, reg_stackPointer | 0x0100, READ);
 				cycles--;
 				return value;
 			}
@@ -1473,8 +1474,8 @@ namespace m6502 {
 				if (flag == condition) {
 					BYTE oldPage = reg_programCounter >> 8;
 					// unsigned to signed integer with convertion to two's complement if highest bit is set
-					offset = (offset & 0b10000000 > 0 ? offset - 256 : offset);
-					reg_programCounter += offset;
+					int8_t finalOffset = (offset & 0b10000000 > 0 ? offset - 256 : offset);
+					reg_programCounter += finalOffset;
 					cycles--;
 					if (oldPage != (reg_programCounter >> 8)) {
 						// extra cycle if page is crossed
